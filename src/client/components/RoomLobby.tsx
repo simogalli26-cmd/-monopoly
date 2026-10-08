@@ -1,0 +1,169 @@
+import { useState } from 'react';
+import { PLAYER_COLORS, PLAYER_TOKENS } from '../../shared/board';
+import type { ChatMessage, RoomView } from '../../shared/protocol';
+import type { BotLevel, Settings } from '../../shared/types';
+import { request } from '../net';
+import { ChatPanel } from './ChatPanel';
+import { SettingsForm } from './SettingsForm';
+import { toast } from './Toasts';
+
+interface Props {
+  room: RoomView;
+  me: string;
+  chat: ChatMessage[];
+  sendChat: (t: string) => void;
+  onLeave: () => void;
+}
+
+const LEVEL: Record<BotLevel, string> = { easy: 'Facile', normal: 'Medio', hard: 'Difficile' };
+
+export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
+  const isHost = room.hostId === me;
+  const mySeat = room.seats.find((s) => s.id === me);
+  const [botLevel, setBotLevel] = useState<BotLevel>('normal');
+  const link = `${window.location.origin}${window.location.pathname}#/room/${room.id}`;
+
+  const call = async (event: string, payload?: unknown) => {
+    const res = await request(event, payload);
+    if (!res.ok && res.error) toast(res.error, 'error');
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      toast('Link copiato! Invialo ai tuoi amici.', 'success');
+    } catch {
+      toast(link);
+    }
+  };
+
+  return (
+    <div className="room-lobby">
+      <header className="home-header">
+        <button className="btn ghost" onClick={onLeave}>
+          ← Esci
+        </button>
+        <div className="room-title">
+          <h1>{room.name}</h1>
+          <span className="muted">
+            Codice <code>{room.id}</code> {room.isPrivate && '· 🔒 privata'}
+          </span>
+        </div>
+        <button className="btn" onClick={copy}>
+          🔗 Invita
+        </button>
+      </header>
+
+      <main className="lobby-grid">
+        <section className="card">
+          <div className="rooms-head">
+            <h2>
+              Giocatori {room.seats.length}/{room.settings.maxPlayers}
+            </h2>
+            {isHost && (
+              <div className="add-bot">
+                <select value={botLevel} onChange={(e) => setBotLevel(e.target.value as BotLevel)}>
+                  <option value="easy">Bot facile</option>
+                  <option value="normal">Bot medio</option>
+                  <option value="hard">Bot difficile</option>
+                </select>
+                <button
+                  className="btn small"
+                  disabled={room.seats.length >= room.settings.maxPlayers}
+                  onClick={() => call('room:addBot', { level: botLevel })}
+                >
+                  ＋ Bot
+                </button>
+              </div>
+            )}
+          </div>
+          <ul className="seat-list">
+            {room.seats.map((s) => (
+              <li key={s.id} className="seat" style={{ ['--pc' as string]: s.color }}>
+                <span className="seat-token">{s.token}</span>
+                <span className="seat-name">
+                  <b>{s.name}</b>
+                  <small className="muted">
+                    {s.id === room.hostId ? '👑 Host' : s.isBot ? `Bot ${LEVEL[s.botLevel ?? 'normal']}` : 'Giocatore'}
+                    {s.id === me && ' · tu'}
+                    {!s.connected && ' · disconnesso'}
+                  </small>
+                </span>
+                {isHost && s.id !== me && (
+                  <button className="icon-btn" onClick={() => call('room:kick', { id: s.id })} aria-label="Rimuovi">
+                    ✕
+                  </button>
+                )}
+              </li>
+            ))}
+            {Array.from({ length: Math.max(0, room.settings.maxPlayers - room.seats.length) }, (_, i) => (
+              <li key={`empty${i}`} className="seat empty-seat">
+                <span className="seat-token">·</span>
+                <span className="muted">Posto libero</span>
+              </li>
+            ))}
+          </ul>
+
+          {mySeat && (
+            <div className="my-look">
+              <span className="muted">Il tuo aspetto</span>
+              <div className="token-picker">
+                {PLAYER_TOKENS.map((t) => {
+                  const taken = room.seats.some((s) => s.id !== me && s.token === t);
+                  return (
+                    <button
+                      key={t}
+                      disabled={taken}
+                      className={`token-opt ${mySeat.token === t ? 'sel' : ''}`}
+                      onClick={() => call('room:profile', { ...mySeat, token: t })}
+                    >
+                      {t}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="color-picker">
+                {PLAYER_COLORS.map((c) => {
+                  const taken = room.seats.some((s) => s.id !== me && s.color === c);
+                  return (
+                    <button
+                      key={c}
+                      disabled={taken}
+                      className={`color-opt ${mySeat.color === c ? 'sel' : ''}`}
+                      style={{ background: c }}
+                      onClick={() => call('room:profile', { ...mySeat, color: c })}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="start-row">
+            {isHost ? (
+              <button className="btn primary big" disabled={room.seats.length < 2} onClick={() => call('room:start')}>
+                ▶ Inizia la partita
+              </button>
+            ) : (
+              <p className="muted">In attesa che l'host avvii la partita…</p>
+            )}
+            {isHost && room.seats.length < 2 && <small className="muted">Servono almeno 2 giocatori: invita un amico o aggiungi un bot.</small>}
+          </div>
+        </section>
+
+        <section className="card">
+          <h2>Regole {isHost ? '' : <small className="muted">(decise dall'host)</small>}</h2>
+          <SettingsForm
+            value={room.settings}
+            onChange={isHost ? (s: Settings) => call('room:settings', s) : undefined}
+          />
+        </section>
+
+        <section className="card chat-card">
+          <h2>Chat</h2>
+          <ChatPanel messages={chat} onSend={sendChat} me={me} />
+        </section>
+      </main>
+    </div>
+  );
+}
