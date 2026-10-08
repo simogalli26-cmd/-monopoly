@@ -46,6 +46,13 @@ input,
 select {
   font: inherit;
   color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+/* iOS Safari zooms into inputs smaller than 16px */
+input,
+select {
+  font-size: 16px;
 }
 
 code {
@@ -836,6 +843,7 @@ input:disabled {
 /* ------------------------------------------------------------ game layout */
 
 .game {
+  padding-bottom: env(safe-area-inset-bottom);
   height: 100vh;
   height: 100dvh;
   display: flex;
@@ -1226,10 +1234,15 @@ input:disabled {
   min-width: 0;
   min-height: 0;
 }
-.tile:hover {
-  transform: scale(1.06);
-  z-index: 2;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+@media (hover: hover) {
+  .tile:hover {
+    transform: scale(1.06);
+    z-index: 2;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  }
+}
+.tile:active {
+  transform: scale(0.97);
 }
 .tile.side-bottom {
   flex-direction: column;
@@ -1932,7 +1945,7 @@ input:disabled {
 
 /* ------------------------------------------------------------ responsive */
 
-@container (max-width: 620px) {
+@container (max-width: 540px) {
   .tile-name {
     display: none;
   }
@@ -1980,7 +1993,12 @@ input:disabled {
 
 @media (max-width: 1280px) {
   .game-grid {
-    grid-template-columns: 250px minmax(0, 1fr) 270px;
+    grid-template-columns: 230px minmax(0, 1fr) 250px;
+    gap: 10px;
+    padding: 10px;
+  }
+  .board-wrap {
+    width: min(100%, calc(100dvh - 76px));
   }
 }
 
