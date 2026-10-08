@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { DEFAULT_SETTINGS, PLAYER_COLORS, PLAYER_TOKENS } from '../../shared/board';
 import type { Profile, RoomSummary } from '../../shared/protocol';
+import type { BoardTheme } from '../../shared/theme';
 import type { BotLevel, Settings } from '../../shared/types';
+import { getBoard, listBoards } from '../boards';
 import { getSocket, request } from '../net';
 import { loadPref, savePref } from '../profile';
 import { Modal } from './Modal';
@@ -12,6 +14,7 @@ export interface OfflineConfig {
   bots: number;
   level: BotLevel;
   settings: Settings;
+  theme?: BoardTheme | null;
 }
 
 interface Props {
@@ -20,6 +23,7 @@ interface Props {
   pendingRoom?: string;
   onJoin: (roomId: string) => void;
   onOffline: (cfg: OfflineConfig) => void;
+  onBoards: () => void;
 }
 
 const loadSettings = (): Settings => {
@@ -30,7 +34,7 @@ const loadSettings = (): Settings => {
   }
 };
 
-export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline }: Props) {
+export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBoards }: Props) {
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [connected, setConnected] = useState(false);
   const [code, setCode] = useState(pendingRoom ?? '');
@@ -41,6 +45,25 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline }: Pr
   const [bots, setBots] = useState(3);
   const [level, setLevel] = useState<BotLevel>('normal');
   const [filter, setFilter] = useState<'all' | 'waiting'>('all');
+  const [boardId, setBoardIdState] = useState(() => loadPref('boardId', ''));
+  const boards = listBoards();
+  const setBoardId = (id: string) => {
+    setBoardIdState(id);
+    savePref('boardId', id);
+  };
+  const boardPicker = (
+    <label className="field">
+      <span>Tabellone</span>
+      <select value={getBoard(boardId) ? boardId : ''} onChange={(e) => setBoardId(e.target.value)}>
+        <option value="">Classico Metropoly</option>
+        {boards.map((b) => (
+          <option key={b.id} value={b.id}>
+            🎨 {b.title}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 
   useEffect(() => {
     const s = getSocket();
@@ -75,7 +98,7 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline }: Pr
 
   const create = async () => {
     if (needName()) return;
-    const res = await request<string>('room:create', { name: roomName, isPrivate, settings, profile });
+    const res = await request<string>('room:create', { name: roomName, isPrivate, settings, profile, theme: getBoard(boardId) });
     if (!res.ok) return toast(res.error ?? 'Impossibile creare la stanza', 'error');
     setModal(null);
     onJoin(res.data!);
@@ -172,6 +195,9 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline }: Pr
             <button className="btn big ghost" onClick={() => !needName() && setModal('offline')}>
               🤖 Contro i bot
             </button>
+            <button className="btn big ghost" onClick={onBoards}>
+              🎨 Crea il tuo tabellone
+            </button>
           </div>
           <form
             className="join-code"
@@ -258,6 +284,7 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline }: Pr
               <small>Non compare nella lista: si entra solo con il link o il codice.</small>
             </span>
           </label>
+          {boardPicker}
           <SettingsForm value={settings} onChange={updateSettings} />
           <div className="modal-actions">
             <button className="btn ghost" onClick={() => setModal(null)}>
@@ -292,6 +319,7 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline }: Pr
               </select>
             </label>
           </div>
+          {boardPicker}
           <SettingsForm value={settings} onChange={updateSettings} compact />
           <div className="modal-actions">
             <button className="btn ghost" onClick={() => setModal(null)}>
@@ -301,7 +329,7 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline }: Pr
               className="btn primary"
               onClick={() => {
                 setModal(null);
-                onOffline({ bots, level, settings: { ...settings, maxPlayers: 8 } });
+                onOffline({ bots, level, settings: { ...settings, maxPlayers: 8 }, theme: getBoard(boardId) });
               }}
             >
               Gioca

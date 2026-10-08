@@ -1,3 +1,4 @@
+import type { BoardTheme } from './theme';
 import type { BotLevel, PlayerSeat, Settings } from './types';
 
 export interface Profile {
@@ -18,6 +19,7 @@ export interface RoomView {
   settings: Settings;
   seats: RoomSeat[];
   status: 'waiting' | 'playing' | 'finished';
+  theme: BoardTheme | null;
 }
 
 export interface RoomSummary {
@@ -52,6 +54,7 @@ export interface CreateRoomPayload {
   isPrivate: boolean;
   settings: Settings;
   profile: Profile;
+  theme?: BoardTheme | null;
 }
 
 export type AddBotPayload = { level: BotLevel };

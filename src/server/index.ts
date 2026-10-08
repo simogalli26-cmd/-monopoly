@@ -8,6 +8,7 @@ import { DEFAULT_SETTINGS, PLAYER_COLORS, PLAYER_TOKENS } from '../shared/board'
 import { createGame } from '../shared/engine';
 import type { Ack, ChatMessage, CreateRoomPayload, Profile, RoomSeat, RoomSummary, RoomView } from '../shared/protocol';
 import { GameRunner } from '../shared/runner';
+import { sanitizeTheme, type BoardTheme } from '../shared/theme';
 import type { Action, BotLevel, Settings } from '../shared/types';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -22,6 +23,7 @@ interface Room {
   hostId: string;
   isPrivate: boolean;
   settings: Settings;
+  theme: BoardTheme | null;
   seats: RoomSeat[];
   status: RoomView['status'];
   runner: GameRunner | null;
@@ -84,6 +86,7 @@ const view = (r: Room): RoomView => ({
   settings: r.settings,
   seats: r.seats,
   status: r.status,
+  theme: r.theme,
 });
 
 const summary = (r: Room): RoomSummary => ({
@@ -221,6 +224,7 @@ io.on('connection', (socket: Socket) => {
       hostId: clientId,
       isPrivate: !!payload?.isPrivate,
       settings: sanitizeSettings(payload?.settings),
+      theme: sanitizeTheme(payload?.theme),
       seats: [{ id: clientId, ...profile, isBot: false, connected: true }],
       status: 'waiting',
       runner: null,
@@ -284,6 +288,14 @@ io.on('connection', (socket: Socket) => {
     reply(ack, { ok: true });
   });
 
+  socket.on('room:theme', (theme: BoardTheme | null, ack) => {
+    const r = room();
+    if (!r || !isHost(r) || r.status !== 'waiting') return reply(ack, { ok: false, error: 'Solo l’host può cambiare il tabellone' });
+    r.theme = sanitizeTheme(theme);
+    broadcastRoom(r);
+    reply(ack, { ok: true });
+  });
+
   socket.on('room:addBot', (payload: { level: BotLevel }, ack) => {
     const r = room();
     if (!r || !isHost(r) || r.status !== 'waiting') return reply(ack, { ok: false, error: 'Solo l’host può aggiungere bot' });
@@ -314,7 +326,7 @@ io.on('connection', (socket: Socket) => {
     const r = room();
     if (!r || !isHost(r) || r.status !== 'waiting') return reply(ack, { ok: false, error: 'Solo l’host può iniziare' });
     if (r.seats.length < 2) return reply(ack, { ok: false, error: 'Servono almeno 2 giocatori' });
-    const state = createGame({ id: r.id, settings: r.settings, seats: r.seats, now: Date.now() });
+    const state = createGame({ id: r.id, settings: r.settings, seats: r.seats, now: Date.now(), theme: r.theme });
     r.status = 'playing';
     r.runner = new GameRunner(state, (s) => {
       io.to(`room:${r.id}`).emit('game:state', s);

@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { PLAYER_COLORS, PLAYER_TOKENS } from '../../shared/board';
 import type { ChatMessage, RoomView } from '../../shared/protocol';
 import type { BotLevel, Settings } from '../../shared/types';
+import { getBoard, listBoards } from '../boards';
 import { request } from '../net';
+import { BoardPreview } from './BoardEditor';
 import { ChatPanel } from './ChatPanel';
 import { SettingsForm } from './SettingsForm';
 import { toast } from './Toasts';
@@ -21,6 +23,8 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
   const isHost = room.hostId === me;
   const mySeat = room.seats.find((s) => s.id === me);
   const [botLevel, setBotLevel] = useState<BotLevel>('normal');
+  const [showBoard, setShowBoard] = useState(false);
+  const myBoards = listBoards();
   const link = `${window.location.origin}${window.location.pathname}#/room/${room.id}`;
 
   const call = async (event: string, payload?: unknown) => {
@@ -153,6 +157,32 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
 
         <section className="card">
           <h2>Regole {isHost ? '' : <small className="muted">(decise dall'host)</small>}</h2>
+          <div className="board-choice">
+            <label className="field grow">
+              <span>Tabellone</span>
+              {isHost ? (
+                <select value={room.theme?.id ?? ''} onChange={(e) => call('room:theme', getBoard(e.target.value))}>
+                  <option value="">Classico Metropoly</option>
+                  {room.theme && !myBoards.some((b) => b.id === room.theme!.id) && <option value={room.theme.id}>🎨 {room.theme.title}</option>}
+                  {myBoards.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      🎨 {b.title}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <b>{room.theme ? `🎨 ${room.theme.title}` : 'Classico Metropoly'}</b>
+              )}
+            </label>
+            <button className="btn small" onClick={() => setShowBoard(!showBoard)}>
+              {showBoard ? 'Nascondi' : '👁️ Anteprima'}
+            </button>
+          </div>
+          {showBoard && (
+            <div className="lobby-preview">
+              <BoardPreview theme={room.theme ?? { id: 'default', title: 'Classico Metropoly', spaces: {}, groups: {} }} />
+            </div>
+          )}
           <SettingsForm
             value={room.settings}
             onChange={isHost ? (s: Settings) => call('room:settings', s) : undefined}

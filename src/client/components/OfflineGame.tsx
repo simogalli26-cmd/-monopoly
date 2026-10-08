@@ -24,7 +24,7 @@ function build(config: OfflineConfig, profile: Profile): GameState {
       botLevel: config.level,
     })),
   ];
-  return createGame({ id: 'offline', settings: config.settings, seats, now: Date.now() });
+  return createGame({ id: 'offline', settings: config.settings, seats, now: Date.now(), theme: config.theme ?? null });
 }
 
 export function OfflineGame({ config, profile, onExit }: { config: OfflineConfig; profile: Profile; onExit: () => void }) {

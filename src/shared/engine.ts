@@ -178,7 +178,7 @@ export function createGame(opts: {
   s.decks.chance = shuffle(s, CHANCE_CARDS.map((_, i) => i));
   s.decks.chest = shuffle(s, CHEST_CARDS.map((_, i) => i));
   log(s, 'La partita è iniziata! Buona fortuna a tutti.', 'turn');
-  log(s, `Tocca a ${s.players[0].name}.`, 'turn');
+  if (s.players[0]) log(s, `Tocca a ${s.players[0].name}.`, 'turn');
   setPhase(s, 'roll', now);
   return s;
 }
