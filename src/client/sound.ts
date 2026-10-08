@@ -29,7 +29,11 @@ function tone(freq: number, dur = 0.08, type: OscillatorType = 'sine', gain = 0.
 }
 
 export const sfx = {
-  dice: () => [0, 0.05, 0.1, 0.16, 0.22].forEach((d) => tone(180 + Math.random() * 220, 0.04, 'square', 0.03, d)),
+  dice: () => {
+    // Rattle that slows down, then the final "clack" when the dice settle.
+    [0, 0.07, 0.15, 0.24, 0.35, 0.48, 0.63, 0.8, 1.0].forEach((d) => tone(170 + Math.random() * 260, 0.035, 'square', 0.028, d));
+    [1.3, 1.36].forEach((d) => tone(240, 0.06, 'triangle', 0.05, d));
+  },
   step: () => tone(520, 0.04, 'triangle', 0.035),
   cash: () => [660, 880, 1320].forEach((f, i) => tone(f, 0.09, 'sine', 0.05, i * 0.07)),
   pay: () => [440, 330].forEach((f, i) => tone(f, 0.1, 'sawtooth', 0.03, i * 0.08)),

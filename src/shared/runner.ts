@@ -1,5 +1,6 @@
 import { decideBotAction } from './bot';
 import { EngineError, activePlayer, applyAction, debtsOf, tick } from './engine';
+import { followDuration } from './timing';
 import type { Action, GameState } from './types';
 
 export interface DispatchResult {
@@ -20,6 +21,8 @@ export class GameRunner {
   readonly autopilot = new Set<string>();
   private timer: ReturnType<typeof setInterval> | null = null;
   private botReadyAt = new Map<string, number>();
+  /** Until this time the viewers are still watching an animation. */
+  private busyUntil = 0;
 
   constructor(
     state: GameState,
@@ -39,24 +42,46 @@ export class GameRunner {
   }
 
   dispatch(playerId: string, action: Action): DispatchResult {
+    const prev = this.state;
     try {
       this.state = applyAction(this.state, playerId, action, Date.now());
     } catch (e) {
       if (e instanceof EngineError) return { ok: false, error: e.message };
       throw e;
     }
-    this.afterChange();
+    this.afterChange(prev, playerId, action);
     return { ok: true };
   }
 
-  private afterChange() {
+  /** Human-like "thinking" time before a bot acts, depending on what it has to decide. */
+  private thinkTime(botId: string, actor: string | null, action: Action | null): number {
+    const s = this.state;
+    const r = Math.random();
+    if (s.phase === 'auction') return action?.type === 'bid' ? 900 + r * 1300 : 1600 + r * 900;
+    if (s.trades.some((t) => t.to === botId)) return 1800 + r * 1700;
+    const mine = activePlayer(s).id === botId;
+    if (!mine) return 600 + r * 400;
+    // Consecutive management actions (building, mortgaging) feel quicker.
+    if (actor === botId && action && ['build', 'sell', 'mortgage', 'unmortgage', 'payDebt'].includes(action.type))
+      return 650 + r * 450;
+    if (s.phase === 'buy') return 900 + r * 800;
+    if (s.phase === 'end') return 700 + r * 600;
+    // Start of turn (or rolling again after a double).
+    return actor === botId ? 700 + r * 500 : 900 + r * 600;
+  }
+
+  private afterChange(prev: GameState, actor: string | null = null, action: Action | null = null) {
     const now = Date.now();
+    const animUntil = now + followDuration(prev, this.state);
+    this.busyUntil = Math.max(this.busyUntil, animUntil);
     for (const p of this.state.players) {
       if (p.isBot || this.autopilot.has(p.id)) {
-        const delay = this.state.phase === 'auction' ? 500 + Math.random() * 900 : 650 + Math.random() * 450;
-        this.botReadyAt.set(p.id, Math.max(this.botReadyAt.get(p.id) ?? 0, now + delay / this.botSpeed));
+        const ready = animUntil + this.thinkTime(p.id, actor, action) / this.botSpeed;
+        this.botReadyAt.set(p.id, Math.max(this.botReadyAt.get(p.id) ?? 0, ready));
       }
     }
+    // The turn timer starts once the animation is over.
+    if (this.state.turnDeadline && animUntil > now) this.state.turnDeadline += animUntil - now;
     this.onChange(this.state);
     if (this.state.phase === 'over') this.stop();
   }
@@ -66,7 +91,8 @@ export class GameRunner {
     const s = this.state;
     if (s.phase === 'over') return this.stop();
 
-    if (tick(s, now)) return this.afterChange();
+    const before = s;
+    if (tick(s, now)) return this.afterChange(before);
 
     // Bots and autopiloted humans.
     for (const p of s.players) {
@@ -83,7 +109,7 @@ export class GameRunner {
 
     // Turn timer for humans who are not answering.
     const active = activePlayer(this.state);
-    if (this.state.turnDeadline && now > this.state.turnDeadline && !active.isBot) {
+    if (this.state.turnDeadline && now > this.state.turnDeadline && now > this.busyUntil && !active.isBot) {
       const action = decideBotAction(this.state, active.id, true);
       if (action) {
         const res = this.dispatch(active.id, action);

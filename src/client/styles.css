@@ -1548,12 +1548,75 @@ input:disabled {
   height: var(--size);
   perspective: 40cqw;
 }
+.die-scene {
+  position: relative;
+}
 .die {
   width: 100%;
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.65s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.18, 0.62, 0.22, 1);
+  z-index: 1;
+}
+.die-shadow {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -1.4cqw;
+  height: 1cqw;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  filter: blur(0.5cqw);
+}
+.die-scene.tossing {
+  animation: toss 1.5s cubic-bezier(0.3, 0.1, 0.3, 1) both;
+}
+.die-scene.tossing .die-shadow {
+  animation: tossShadow 1.5s cubic-bezier(0.3, 0.1, 0.3, 1) both;
+}
+@keyframes toss {
+  0% {
+    transform: translate(0, 0);
+  }
+  22% {
+    transform: translate(-1.5cqw, -6cqw);
+  }
+  48% {
+    transform: translate(0.5cqw, 0);
+  }
+  62% {
+    transform: translate(0.8cqw, -1.8cqw);
+  }
+  76% {
+    transform: translate(0.3cqw, 0);
+  }
+  86% {
+    transform: translate(0.1cqw, -0.5cqw);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes tossShadow {
+  22% {
+    transform: translateY(6cqw) scale(0.55);
+    opacity: 0.4;
+  }
+  48%,
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+.watching {
+  animation: breathe 1.4s ease-in-out infinite;
+}
+@keyframes breathe {
+  50% {
+    opacity: 0.55;
+  }
 }
 .face {
   position: absolute;

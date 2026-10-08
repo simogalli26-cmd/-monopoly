@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { DICE_MS } from '../../shared/timing';
+import { sfx } from '../sound';
 
 const PIPS: Record<number, number[]> = {
   1: [4],
@@ -28,11 +30,16 @@ const FACES = [
   { n: 6, t: 'rotateY(180deg) translateZ(var(--half))' },
 ];
 
-function Die({ value, rolling, spin }: { value: number; rolling: boolean; spin: number }) {
-  const extra = `rotateX(${spin * 720}deg) rotateY(${spin * 720}deg)`;
+function Die({ value, rolling, seq, offset }: { value: number; rolling: boolean; seq: number; offset: number }) {
+  // Each roll adds a few full turns (multiples of 360° keep the final face correct).
+  const turns = seq * 4 + offset;
+  const extra = `rotateX(${turns * 360}deg) rotateY(${(turns + 1) * 360}deg) rotateZ(${seq * 360}deg)`;
   return (
-    <div className="die-scene">
-      <div className={`die ${rolling ? 'rolling' : ''}`} style={{ transform: `${extra} ${FACE_ROT[value]}` }}>
+    <div className={`die-scene ${rolling ? 'tossing' : ''}`} style={{ animationDelay: `${offset * 60}ms` }}>
+      <div
+        className={`die ${rolling ? 'rolling' : ''}`}
+        style={{ transform: `${extra} ${FACE_ROT[value]}`, transitionDuration: `${DICE_MS - 150}ms` }}
+      >
         {FACES.map((f) => (
           <div key={f.n} className="face" style={{ transform: f.t }}>
             {Array.from({ length: 9 }, (_, i) => (
@@ -41,22 +48,25 @@ function Die({ value, rolling, spin }: { value: number; rolling: boolean; spin: 
           </div>
         ))}
       </div>
+      <div className="die-shadow" />
     </div>
   );
 }
 
 export function Dice({ dice, seq }: { dice: [number, number]; seq: number }) {
   const [rolling, setRolling] = useState(false);
+  const first = useRef(seq);
   useEffect(() => {
-    if (!seq) return;
+    if (!seq || seq === first.current) return;
     setRolling(true);
-    const t = setTimeout(() => setRolling(false), 650);
+    sfx.dice();
+    const t = setTimeout(() => setRolling(false), DICE_MS);
     return () => clearTimeout(t);
   }, [seq]);
   return (
-    <div className={`dice ${dice[0] === dice[1] && seq ? 'double' : ''}`}>
-      <Die value={dice[0]} rolling={rolling} spin={seq} />
-      <Die value={dice[1]} rolling={rolling} spin={seq + 1} />
+    <div className={`dice ${dice[0] === dice[1] && seq && !rolling ? 'double' : ''}`}>
+      <Die value={dice[0]} rolling={rolling} seq={seq} offset={0} />
+      <Die value={dice[1]} rolling={rolling} seq={seq} offset={1} />
     </div>
   );
 }

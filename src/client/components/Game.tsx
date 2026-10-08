@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { activePlayer, getPlayer } from '../../shared/engine';
 import type { Ack, ChatMessage } from '../../shared/protocol';
+import { DICE_MS, moveDuration, stepMs, walkSteps } from '../../shared/timing';
 import type { Action, DrawnCard, GameState, TradeDraft, TradeOffer } from '../../shared/types';
 import { isSoundOn, setSound, sfx } from '../sound';
 import { Board } from './Board';
@@ -24,55 +25,80 @@ interface Props {
   roomId?: string;
 }
 
-/** Moves tokens one tile at a time towards their real positions. */
+/** Moves tokens one tile at a time towards their real positions, after the dice have landed. */
 function useTokenAnimation(state: GameState) {
   const [positions, setPositions] = useState<Record<string, number>>(() =>
     Object.fromEntries(state.players.map((p) => [p.id, p.position])),
   );
   const [moving, setMoving] = useState<string | null>(null);
   const current = useRef(positions);
-  const timers = useRef(new Map<string, ReturnType<typeof setInterval>>());
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const lastRoll = useRef(state.rollSeq);
   const key = state.players.map((p) => `${p.id}:${p.position}:${p.inJail}`).join('|');
 
   useEffect(() => {
+    const rolled = state.rollSeq !== lastRoll.current;
+    lastRoll.current = state.rollSeq;
     for (const p of state.players) {
       const from = current.current[p.id] ?? p.position;
       const to = p.position;
       if (from === to) continue;
       const prev = timers.current.get(p.id);
-      if (prev) clearInterval(prev);
-      const fwd = (to - from + 40) % 40;
+      if (prev) clearTimeout(prev);
       const set = (v: number) => {
         current.current = { ...current.current, [p.id]: v };
         setPositions(current.current);
       };
-      if ((p.inJail && to === 10) || fwd === 0) {
-        set(to);
-        continue;
-      }
-      const backwards = fwd >= 37;
-      const steps = backwards ? 40 - fwd : fwd;
-      const speed = steps > 12 ? 55 : 125;
+      const steps = walkSteps(from, to, p.inJail);
+      const backwards = (to - from + 40) % 40 >= 37;
+      const speed = stepMs(steps);
       let done = 0;
-      setMoving(p.id);
-      const t = setInterval(() => {
+      const step = () => {
+        if (steps === 0) {
+          set(to);
+          timers.current.delete(p.id);
+          return;
+        }
         done++;
-        const v = (from + (backwards ? -done : done) + 40) % 40;
-        set(v);
+        set((from + (backwards ? -done : done) + 40) % 40);
         sfx.step();
         if (done >= steps) {
-          clearInterval(t);
           timers.current.delete(p.id);
           setMoving((m) => (m === p.id ? null : m));
-        }
-      }, speed);
-      timers.current.set(p.id, t);
+        } else timers.current.set(p.id, setTimeout(step, speed));
+      };
+      if (steps > 0) setMoving(p.id);
+      timers.current.set(p.id, setTimeout(step, rolled ? DICE_MS : 0));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  useEffect(() => () => timers.current.forEach((t) => clearInterval(t)), []);
+  useEffect(() => () => timers.current.forEach((t) => clearTimeout(t)), []);
   return { positions, moving };
+}
+
+/**
+ * The state the viewer "sees": after a roll it lags behind the real state until the dice
+ * and the token animation are over, so money, log and cards don't spoil the result.
+ */
+function useFollowView(state: GameState): [GameState, boolean] {
+  const [view, setView] = useState(state);
+  const prevRef = useRef(state);
+  const releaseAt = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevRef.current;
+    prevRef.current = state;
+    const now = Date.now();
+    const d = prev.id === state.id ? moveDuration(prev, state) : 0;
+    releaseAt.current = Math.max(releaseAt.current, now + d);
+    clearTimeout(timer.current);
+    const wait = releaseAt.current - now;
+    if (wait <= 0) setView(state);
+    else timer.current = setTimeout(() => setView(state), wait);
+  }, [state]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return [view, view !== state];
 }
 
 function useGameSounds(state: GameState, me: string | null) {
@@ -81,7 +107,6 @@ function useGameSounds(state: GameState, me: string | null) {
     const old = prev.current;
     prev.current = state;
     if (!old || old.id !== state.id) return;
-    if (state.rollSeq !== old.rollSeq) sfx.dice();
     if (state.phase === 'over' && old.phase !== 'over') return sfx.win();
     const turnChanged = activePlayer(state).id !== activePlayer(old).id;
     if (turnChanged && activePlayer(state).id === me) sfx.turn();
@@ -102,6 +127,7 @@ function useGameSounds(state: GameState, me: string | null) {
 
 export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline, roomId }: Props) {
   const { positions, moving } = useTokenAnimation(state);
+  const [view, animating] = useFollowView(state);
   const [selected, setSelected] = useState<number | null>(null);
   const [trade, setTrade] = useState<Partial<TradeDraft> | null>(null);
   const [tab, setTab] = useState<'log' | 'chat' | 'props'>('log');
@@ -112,7 +138,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
   const [unread, setUnread] = useState(0);
   const lastCardSeq = useRef(state.lastCard?.seq ?? 0);
   const chatLen = useRef(chat?.messages.length ?? 0);
-  useGameSounds(state, me);
+  useGameSounds(view, me);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 200);
@@ -120,13 +146,13 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
   }, []);
 
   useEffect(() => {
-    const c = state.lastCard;
+    const c = view.lastCard;
     if (!c || c.seq === lastCardSeq.current) return;
     lastCardSeq.current = c.seq;
     setCard(c);
     const t = setTimeout(() => setCard((x) => (x?.seq === c.seq ? null : x)), 4200);
     return () => clearTimeout(t);
-  }, [state.lastCard]);
+  }, [view.lastCard]);
 
   useEffect(() => {
     const n = chat?.messages.length ?? 0;
@@ -181,7 +207,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
       getCards: t.giveCards,
     });
 
-  const active = activePlayer(state);
+  const active = activePlayer(view);
   const meP = getPlayer(state, me);
   const myTurn = !!meP && active.id === me;
   const exit = () => {
@@ -197,19 +223,27 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
         Metro<b>poly</b>
       </div>
       <div className="center-status">
-        <span className="round">Giro {state.round}</span>
-        {state.settings.freeParkingPot && <span className="pot-badge">🅿️ Montepremi ${state.pot}</span>}
+        <span className="round">Giro {view.round}</span>
+        {view.settings.freeParkingPot && <span className="pot-badge">🅿️ Montepremi ${view.pot}</span>}
       </div>
       <Dice dice={state.dice} seq={state.rollSeq} />
-      {card && <CardView card={card} state={state} />}
+      {card && <CardView card={card} state={view} />}
       {state.phase === 'auction' && state.auction ? (
         <AuctionPanel state={state} me={me} act={act} now={now} />
-      ) : state.phase === 'over' ? (
+      ) : view.phase === 'over' ? (
         <div className="actions">
           <p>🏆 Partita terminata</p>
         </div>
       ) : (
-        <ActionPanel state={state} me={me} act={act} busy={busy || !!moving} />
+        animating ? (
+          <div className="actions">
+            <p className="muted watching">
+              {activePlayer(view).id === me ? '🎲 Vediamo dove arrivi…' : `${activePlayer(view).token} ${activePlayer(view).name} sta giocando…`}
+            </p>
+          </div>
+        ) : (
+          <ActionPanel state={state} me={me} act={act} busy={busy || !!moving} />
+        )
       )}
       {state.phase !== 'auction' && (
         <TimerBar deadline={state.turnDeadline} total={state.settings.turnTime * 1000} now={now} />
@@ -227,7 +261,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
           </span>
         </div>
         <div className="turn-pill" style={{ ['--pc' as string]: active.color }}>
-          {state.phase === 'over' ? 'Fine partita' : myTurn ? '⭐ Tocca a te!' : `Turno di ${active.token} ${active.name}`}
+          {view.phase === 'over' ? 'Fine partita' : myTurn ? '⭐ Tocca a te!' : `Turno di ${active.token} ${active.name}`}
         </div>
         <div className="header-actions">
           {roomId && (
@@ -253,7 +287,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
 
       <div className="game-grid">
         <aside className="side left">
-          <PlayersPanel state={state} me={me} onTrade={(to) => setTrade({ to })} />
+          <PlayersPanel state={view} me={me} onTrade={(to) => setTrade({ to })} />
           <TradesPanel state={state} me={me} act={act} onCounter={counter} />
           {meP && !meP.bankrupt && state.phase !== 'over' && (
             <button className="btn wide" onClick={() => setTrade({})}>
@@ -264,9 +298,9 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
 
         <main className="board-area">
           <Board
-            state={state}
+            state={view}
             positions={positions}
-            highlight={moving ? null : state.phase === 'buy' ? active.position : state.auction?.space ?? null}
+            highlight={moving || animating ? null : view.phase === 'buy' ? activePlayer(view).position : view.auction?.space ?? null}
             onTile={setSelected}
             center={center}
             movingId={moving}
@@ -296,7 +330,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
             )}
           </div>
           <div className="tab-body">
-            {tab === 'log' && <LogPanel log={state.log} />}
+            {tab === 'log' && <LogPanel log={view.log} />}
             {tab === 'chat' && chat && <ChatPanel messages={chat.messages} onSend={chat.send} me={me} />}
             {tab === 'props' && me && <MyProps state={state} me={me} onOpen={setSelected} />}
           </div>
@@ -322,8 +356,8 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
         <TradeModal state={state} me={me} initial={trade} onSend={sendTrade} onClose={() => setTrade(null)} />
       )}
 
-      {state.phase === 'over' && (
-        <WinnerModal state={state} onExit={onExit} onRematch={onRematch} canRematch={!!isHost} />
+      {view.phase === 'over' && (
+        <WinnerModal state={view} onExit={onExit} onRematch={onRematch} canRematch={!!isHost} />
       )}
     </div>
   );
