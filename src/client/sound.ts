@@ -1,7 +1,10 @@
+import { onAdMute } from './platform';
 import { loadPref, savePref } from './profile';
 
 let ctx: AudioContext | null = null;
 let enabled = loadPref('sound', '1') === '1';
+let adMuted = false;
+onAdMute((m) => (adMuted = m));
 
 export const isSoundOn = () => enabled;
 export function setSound(on: boolean) {
@@ -10,7 +13,7 @@ export function setSound(on: boolean) {
 }
 
 function tone(freq: number, dur = 0.08, type: OscillatorType = 'sine', gain = 0.06, delay = 0) {
-  if (!enabled) return;
+  if (!enabled || adMuted) return;
   try {
     ctx ||= new AudioContext();
     const t = ctx.currentTime + delay;

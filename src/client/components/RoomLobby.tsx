@@ -4,6 +4,7 @@ import type { ChatMessage, RoomView } from '../../shared/protocol';
 import type { BotLevel, Settings } from '../../shared/types';
 import { getBoard, listBoards } from '../boards';
 import { request } from '../net';
+import { roomInviteLink } from '../platform';
 import { BoardPreview } from './BoardEditor';
 import { ChatPanel } from './ChatPanel';
 import { SettingsForm } from './SettingsForm';
@@ -25,7 +26,6 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
   const [botLevel, setBotLevel] = useState<BotLevel>('normal');
   const [showBoard, setShowBoard] = useState(false);
   const myBoards = listBoards();
-  const link = `${window.location.origin}${window.location.pathname}#/room/${room.id}`;
 
   const call = async (event: string, payload?: unknown) => {
     const res = await request(event, payload);
@@ -33,6 +33,7 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
   };
 
   const copy = async () => {
+    const link = await roomInviteLink(room.id);
     try {
       await navigator.clipboard.writeText(link);
       toast('Link copiato! Invialo ai tuoi amici.', 'success');

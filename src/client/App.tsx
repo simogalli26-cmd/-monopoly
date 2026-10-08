@@ -7,6 +7,7 @@ import { Home, type OfflineConfig } from './components/Home';
 import { OfflineGame } from './components/OfflineGame';
 import { OnlineRoom } from './components/OnlineRoom';
 import { Toasts } from './components/Toasts';
+import { adBreak, invitedRoom } from './platform';
 import { loadPref, loadProfile, saveProfile } from './profile';
 
 function useHashRoute(): [string, (r: string) => void] {
@@ -28,6 +29,13 @@ export function App() {
   const [profile, setProfileState] = useState<Profile>(loadProfile);
   const [offline, setOffline] = useState<OfflineConfig | null>(null);
 
+  // Players arriving from a portal invite link go straight to the room.
+  useEffect(() => {
+    invitedRoom().then((id) => {
+      if (id && /^[A-Z0-9]{4,8}$/i.test(id) && !window.location.hash.startsWith('#/room/')) go(`/room/${id.toUpperCase()}`);
+    });
+  }, [go]);
+
   const setProfile = (p: Profile) => {
     setProfileState(p);
     saveProfile(p);
@@ -40,8 +48,10 @@ export function App() {
     } catch {
       /* defaults */
     }
-    setOffline({ bots: 3, level: 'normal', settings: { ...settings, maxPlayers: 8 }, theme });
-    go('/offline');
+    adBreak().then(() => {
+      setOffline({ bots: 3, level: 'normal', settings: { ...settings, maxPlayers: 8 }, theme });
+      go('/offline');
+    });
   };
 
   const roomMatch = route.match(/^\/room\/([A-Z0-9]+)/i);
@@ -66,10 +76,12 @@ export function App() {
         pendingRoom={roomMatch?.[1]?.toUpperCase()}
         onJoin={(id) => go(`/room/${id}`)}
         onBoards={() => go('/editor')}
-        onOffline={(cfg) => {
-          setOffline(cfg);
-          go('/offline');
-        }}
+        onOffline={(cfg) =>
+          adBreak().then(() => {
+            setOffline(cfg);
+            go('/offline');
+          })
+        }
       />
     );
   }

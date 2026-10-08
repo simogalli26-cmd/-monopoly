@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Ack, ChatMessage, Profile, RoomView } from '../../shared/protocol';
 import type { Action, GameState } from '../../shared/types';
 import { getSocket, request } from '../net';
+import { adBreak } from '../platform';
 import { getClientId } from '../profile';
 import { sfx } from '../sound';
 import { Game } from './Game';
@@ -99,7 +100,7 @@ export function OnlineRoom({ roomId, profile, onExit }: Props) {
       chat={{ messages: chat, send: sendChat }}
       onExit={leave}
       isHost={room.hostId === me}
-      onRematch={() => request('room:rematch')}
+      onRematch={() => adBreak().then(() => request('room:rematch'))}
       roomId={room.id}
     />
   );

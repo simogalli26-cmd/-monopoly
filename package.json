@@ -2,7 +2,7 @@
   "name": "metropoly",
   "version": "1.0.0",
   "private": true,
-  "description": "Metropoly — gioco di proprietà multiplayer online ispirato a Monopoly, con lobby, bot, aste e scambi.",
+  "description": "Metropoly — gioco di proprietà multiplayer online con lobby, bot, aste, scambi e tabelloni personalizzati.",
   "type": "module",
   "scripts": {
     "dev": "concurrently -k -n server,client -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
@@ -11,7 +11,8 @@
     "build": "tsc --noEmit && vite build",
     "start": "NODE_ENV=production tsx src/server/index.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:portal": "vite build --base ./ --outDir dist/portal --mode portal"
   },
   "engines": {
     "node": ">=20"

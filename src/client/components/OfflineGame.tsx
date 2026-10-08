@@ -4,6 +4,7 @@ import { createGame } from '../../shared/engine';
 import type { Profile } from '../../shared/protocol';
 import { GameRunner } from '../../shared/runner';
 import type { Action, GameState, PlayerSeat } from '../../shared/types';
+import { adBreak } from '../platform';
 import { Game } from './Game';
 import type { OfflineConfig } from './Home';
 
@@ -58,7 +59,7 @@ export function OfflineGame({ config, profile, onExit }: { config: OfflineConfig
       onExit={onExit}
       isHost
       offline
-      onRematch={() => start(build(config, profile))}
+      onRematch={() => adBreak().then(() => start(build(config, profile)))}
     />
   );
 }

@@ -3,6 +3,7 @@ import { activePlayer, getPlayer } from '../../shared/engine';
 import type { Ack, ChatMessage } from '../../shared/protocol';
 import { DICE_MS, moveDuration, stepMs, walkSteps } from '../../shared/timing';
 import type { Action, DrawnCard, GameState, TradeDraft, TradeOffer } from '../../shared/types';
+import { adBreak, gameplayStart, gameplayStop, happyTime } from '../platform';
 import { isSoundOn, setSound, sfx } from '../sound';
 import { Board } from './Board';
 import { ChatPanel } from './ChatPanel';
@@ -139,6 +140,17 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
   const lastCardSeq = useRef(state.lastCard?.seq ?? 0);
   const chatLen = useRef(chat?.messages.length ?? 0);
   useGameSounds(view, me);
+
+  // Tell game portals when real gameplay is happening (used for their ad pacing).
+  const over = view.phase === 'over';
+  useEffect(() => {
+    if (over) {
+      gameplayStop();
+      if (view.winner && view.winner === me) happyTime();
+    } else gameplayStart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [over]);
+  useEffect(() => () => void gameplayStop(), []);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 200);
@@ -357,7 +369,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
       )}
 
       {view.phase === 'over' && (
-        <WinnerModal state={view} onExit={onExit} onRematch={onRematch} canRematch={!!isHost} />
+        <WinnerModal state={view} onExit={() => adBreak().then(onExit)} onRematch={onRematch} canRematch={!!isHost} />
       )}
     </div>
   );
