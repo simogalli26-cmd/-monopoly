@@ -12,6 +12,7 @@ import {
   unmortgageCost,
   type Card,
 } from './board';
+import { DECK_NAMES, cardText, nameOf, type BoardTheme } from './theme';
 import type {
   Action,
   Deck,
@@ -72,7 +73,7 @@ export const debtsOf = (s: GameState, id: string) => s.debts.filter((d) => d.fro
 export const totalDebt = (s: GameState, id: string): number =>
   debtsOf(s, id).reduce((sum, d) => sum + d.amount, 0);
 
-export function hasMonopoly(s: GameState, group: Group, id: string): boolean {
+export function hasFullSet(s: GameState, group: Group, id: string): boolean {
   return GROUP_MEMBERS[group].every((i) => s.ownership[i].owner === id);
 }
 
@@ -83,7 +84,7 @@ export function rentFor(s: GameState, index: number, diceTotal: number): number 
   if (space.type === 'property') {
     if (own.houses > 0) return space.rent![own.houses];
     const base = space.rent![0];
-    return s.settings.doubleRentOnSet && hasMonopoly(s, space.group!, own.owner) ? base * 2 : base;
+    return s.settings.doubleRentOnSet && hasFullSet(s, space.group!, own.owner) ? base * 2 : base;
   }
   const count = GROUP_MEMBERS[space.group!].filter((i) => s.ownership[i].owner === own.owner).length;
   if (space.type === 'airport') return 25 * 2 ** (count - 1);
@@ -133,10 +134,12 @@ export function createGame(opts: {
   seats: PlayerSeat[];
   seed?: number;
   now: number;
+  theme?: BoardTheme | null;
 }): GameState {
   const { settings, now } = opts;
   const s: GameState = {
     id: opts.id,
+    theme: opts.theme ?? null,
     settings: { ...settings },
     players: [],
     ownership: BOARD.map(() => ({ owner: null, houses: 0, mortgaged: false })),
@@ -235,7 +238,7 @@ function moveTo(s: GameState, p: Player, target: number) {
     const double = target === 0 && s.settings.doubleGoOnLanding;
     const salary = double ? GO_SALARY * 2 : GO_SALARY;
     p.cash += salary;
-    log(s, `${p.name} ${target === 0 ? 'si ferma sul' : 'passa dal'} VIA e ritira ${money(salary)}.`, 'money');
+    log(s, `${p.name} ${target === 0 ? 'si ferma sulla' : 'passa dalla'} Partenza e ritira ${money(salary)}.`, 'money');
   }
   p.position = target;
 }
@@ -260,18 +263,18 @@ function landOn(s: GameState, p: Player, now: number, mods: LandMods = {}) {
       if (own.owner === p.id) return;
       const owner = getPlayer(s, own.owner)!;
       if (own.mortgaged) {
-        log(s, `${space.name} è ipotecata: nessun affitto.`);
+        log(s, `${nameOf(s.theme, p.position)} è ipotecata: nessun affitto.`);
         return;
       }
       if (owner.inJail && s.settings.noRentInJail) {
-        log(s, `${owner.name} è in prigione e non riscuote l'affitto di ${space.name}.`);
+        log(s, `${owner.name} è in prigione e non riscuote l'affitto di ${nameOf(s.theme, p.position)}.`);
         return;
       }
       let rent = rentFor(s, p.position, diceTotal);
       if (space.type === 'airport' && mods.airportMultiplier) rent *= mods.airportMultiplier;
       if (space.type === 'utility' && mods.utilityTenX) rent = diceTotal * 10;
-      log(s, `${p.name} paga ${money(rent)} di affitto a ${owner.name} per ${space.name}.`, 'money');
-      charge(s, p.id, owner.id, rent, `affitto ${space.name}`, now);
+      log(s, `${p.name} paga ${money(rent)} di affitto a ${owner.name} per ${nameOf(s.theme, p.position)}.`, 'money');
+      charge(s, p.id, owner.id, rent, `affitto ${nameOf(s.theme, p.position)}`, now);
       return;
     }
     case 'tax':
@@ -302,7 +305,7 @@ function drawCard(s: GameState, p: Player, deck: Deck, now: number) {
   const cardIdx = pile.shift()!;
   const card = cardsOf(deck)[cardIdx];
   s.lastCard = { seq: (s.lastCard?.seq ?? 0) + 1, deck, card: cardIdx, playerId: p.id };
-  log(s, `${p.name} pesca ${deck === 'chance' ? 'Imprevisti' : 'Probabilità'}: “${card.text}”`, 'card');
+  log(s, `${p.name} pesca ${DECK_NAMES[deck]}: “${cardText(s.theme, card.text)}”`, 'card');
   const e = card.effect;
   if (e.kind !== 'jailFree') pile.push(cardIdx);
   switch (e.kind) {
@@ -406,7 +409,7 @@ export function canBuild(s: GameState, id: string, index: number): string | null
   const own = s.ownership[index];
   if (sp?.type !== 'property') return 'Non edificabile';
   if (own.owner !== id) return 'Non è tua';
-  if (!hasMonopoly(s, sp.group!, id)) return 'Ti serve tutto il gruppo';
+  if (!hasFullSet(s, sp.group!, id)) return 'Ti serve tutto il gruppo';
   const group = groupOf(index);
   if (group.some((i) => s.ownership[i].mortgaged)) return 'Una proprietà del gruppo è ipotecata';
   if (own.houses >= 5) return 'Hai già un albergo';
@@ -529,7 +532,7 @@ function startAuction(s: GameState, space: number, now: number) {
   s.auction = { space, highBid: 0, highBidder: null, endsAt: now + s.settings.auctionTime * 1000 + 2000 };
   setPhase(s, 'auction', now);
   s.turnDeadline = null;
-  log(s, `🔨 Asta per ${BOARD[space].name}!`, 'buy');
+  log(s, `🔨 Asta per ${nameOf(s.theme, space)}!`, 'buy');
 }
 
 function closeAuction(s: GameState, now: number) {
@@ -539,9 +542,9 @@ function closeAuction(s: GameState, now: number) {
   if (winner && !winner.bankrupt && winner.cash >= a.highBid) {
     winner.cash -= a.highBid;
     s.ownership[a.space].owner = winner.id;
-    log(s, `${winner.name} si aggiudica ${BOARD[a.space].name} per ${money(a.highBid)}.`, 'buy');
+    log(s, `${winner.name} si aggiudica ${nameOf(s.theme, a.space)} per ${money(a.highBid)}.`, 'buy');
   } else {
-    log(s, `Nessuna offerta: ${BOARD[a.space].name} resta alla banca.`);
+    log(s, `Nessuna offerta: ${nameOf(s.theme, a.space)} resta alla banca.`);
   }
   if (activePlayer(s).bankrupt) nextTurn(s, now);
   else afterLanding(s, now);
@@ -665,7 +668,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       if (p.cash < sp.price!) fail('Contanti insufficienti');
       p.cash -= sp.price!;
       s.ownership[p.position].owner = p.id;
-      log(s, `${p.name} compra ${sp.name} per ${money(sp.price!)}.`, 'buy');
+      log(s, `${p.name} compra ${nameOf(s.theme, p.position)} per ${money(sp.price!)}.`, 'buy');
       afterLanding(s, now);
       return;
     }
@@ -674,7 +677,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       requireTurn(s, p, 'buy');
       if (s.settings.auctions) startAuction(s, p.position, now);
       else {
-        log(s, `${p.name} non compra ${BOARD[p.position].name}.`);
+        log(s, `${p.name} non compra ${nameOf(s.theme, p.position)}.`);
         afterLanding(s, now);
       }
       return;
@@ -699,7 +702,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       p.cash -= sp.houseCost!;
       const own = s.ownership[action.space];
       own.houses++;
-      log(s, `${p.name} costruisce ${own.houses === 5 ? 'un albergo' : 'una casa'} a ${sp.name}.`, 'build');
+      log(s, `${p.name} costruisce ${own.houses === 5 ? 'un albergo' : 'una casa'} a ${nameOf(s.theme, action.space)}.`, 'build');
       pruneTrades(s);
       return;
     }
@@ -711,7 +714,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       const own = s.ownership[action.space];
       own.houses--;
       p.cash += Math.floor(sp.houseCost! / 2);
-      log(s, `${p.name} vende un edificio a ${sp.name}.`, 'build');
+      log(s, `${p.name} vende un edificio a ${nameOf(s.theme, action.space)}.`, 'build');
       return;
     }
 
@@ -720,7 +723,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       if (err) fail(err);
       s.ownership[action.space].mortgaged = true;
       p.cash += mortgageValue(action.space);
-      log(s, `${p.name} ipoteca ${BOARD[action.space].name} (+${money(mortgageValue(action.space))}).`, 'money');
+      log(s, `${p.name} ipoteca ${nameOf(s.theme, action.space)} (+${money(mortgageValue(action.space))}).`, 'money');
       return;
     }
 
@@ -729,7 +732,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       if (err) fail(err);
       s.ownership[action.space].mortgaged = false;
       p.cash -= unmortgageCost(action.space);
-      log(s, `${p.name} riscatta ${BOARD[action.space].name}.`, 'money');
+      log(s, `${p.name} riscatta ${nameOf(s.theme, action.space)}.`, 'money');
       return;
     }
 

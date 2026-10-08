@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { DECK_ICONS, DECK_NAMES, cardText, shortOf, spaceOf } from '../../shared/theme';
 import { BOARD, GROUP_COLORS, GROUP_MEMBERS, JAIL_FINE } from '../../shared/board';
 import { activePlayer, cardsOf, debtsOf, getPlayer, liquidationValue, netWorth, propertiesOf, totalDebt } from '../../shared/engine';
 import type { Action, ColorGroup, DrawnCard, GameState, LogEntry, Player, TradeOffer } from '../../shared/types';
@@ -119,13 +120,12 @@ export function PlayersPanel({
 function describeSide(state: GameState, props: number[], cash: number, cards: number) {
   const parts = props.map((i) => (
     <span key={i} className="chip" style={{ ['--group' as string]: GROUP_COLORS[BOARD[i].group!] }}>
-      {BOARD[i].short ?? BOARD[i].name}
+      {shortOf(state.theme, i)}
     </span>
   ));
   if (cash) parts.push(<span key="c" className="chip cash">${cash}</span>);
   if (cards) parts.push(<span key="j" className="chip">🎫×{cards}</span>);
   if (!parts.length) parts.push(<span key="n" className="muted small">niente</span>);
-  void state;
   return parts;
 }
 
@@ -212,7 +212,7 @@ export function MyProps({ state, me, onOpen }: { state: GameState; me: string; o
   return (
     <div className="my-props">
       {props.map((i) => {
-        const sp = BOARD[i];
+        const sp = spaceOf(state.theme, i);
         const own = state.ownership[i];
         return (
           <button key={i} className={`my-prop ${own.mortgaged ? 'mortgaged' : ''}`} style={{ ['--group' as string]: GROUP_COLORS[sp.group!] }} onClick={() => onOpen(i)}>
@@ -247,8 +247,8 @@ export function CardView({ card, state }: { card: DrawnCard; state: GameState })
   const who = getPlayer(state, card.playerId);
   return (
     <div className={`game-card deck-${card.deck}`}>
-      <small>{card.deck === 'chance' ? '❓ Imprevisti' : '🎁 Probabilità'}</small>
-      <p>{c.text}</p>
+      <small>{DECK_ICONS[card.deck]} {DECK_NAMES[card.deck]}</small>
+      <p>{cardText(state.theme, c.text)}</p>
       {who && (
         <small className="muted">
           {who.token} {who.name}
@@ -270,7 +270,7 @@ export function AuctionPanel({
   now: number;
 }) {
   const a = state.auction!;
-  const sp = BOARD[a.space];
+  const sp = spaceOf(state.theme, a.space);
   const meP = me ? getPlayer(state, me) : undefined;
   const bidder = getPlayer(state, a.highBidder);
   const [custom, setCustom] = useState('');
@@ -399,7 +399,7 @@ export function ActionPanel({
   }
 
   if (state.phase === 'buy') {
-    const sp = BOARD[meP.position];
+    const sp = spaceOf(state.theme, meP.position);
     return (
       <div className="actions buy-box" style={{ ['--group' as string]: sp.group ? GROUP_COLORS[sp.group] : '#888' }}>
         <p>

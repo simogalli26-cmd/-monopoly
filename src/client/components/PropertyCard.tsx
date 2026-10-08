@@ -1,4 +1,5 @@
-import { BOARD, GROUP_COLORS, GROUP_NAMES, GROUP_MEMBERS, mortgageValue, unmortgageCost } from '../../shared/board';
+import { GROUP_COLORS, GROUP_MEMBERS, mortgageValue, unmortgageCost } from '../../shared/board';
+import { DECK_NAMES, groupLabel, nameOf, spaceOf } from '../../shared/theme';
 import { canBuild, canMortgage, canSell, canUnmortgage, rentFor } from '../../shared/engine';
 import type { Action, GameState } from '../../shared/types';
 
@@ -13,7 +14,7 @@ interface Props {
 const HOUSE_LABELS = ['Affitto', 'Con 1 casa', 'Con 2 case', 'Con 3 case', 'Con 4 case', 'Con albergo'];
 
 export function PropertyCard({ state, index, me, act, onTrade }: Props) {
-  const sp = BOARD[index];
+  const sp = spaceOf(state.theme, index);
   const own = state.ownership[index];
   const owner = state.players.find((p) => p.id === own.owner);
   const color = sp.group ? GROUP_COLORS[sp.group] : '#555';
@@ -65,13 +66,13 @@ export function PropertyCard({ state, index, me, act, onTrade }: Props) {
     );
   } else {
     const desc: Record<string, string> = {
-      go: 'Ogni volta che passi dal VIA ritiri $200.',
-      chance: 'Pesca una carta Imprevisti.',
-      chest: 'Pesca una carta Probabilità.',
+      go: 'Ogni volta che passi dalla Partenza ritiri $200.',
+      chance: `Pesca una carta ${DECK_NAMES.chance}.`,
+      chest: `Pesca una carta ${DECK_NAMES.chest}.`,
       tax: `Paga $${sp.tax} alla banca.`,
       jail: 'Se sei solo di passaggio non succede nulla. Per uscire: doppio, $50 o carta.',
       parking: state.settings.freeParkingPot ? `Vinci il montepremi accumulato ($${state.pot}).` : 'Riposati, qui non succede nulla.',
-      gotojail: 'Vai direttamente in prigione senza passare dal VIA.',
+      gotojail: 'Vai direttamente in prigione senza passare dalla Partenza.',
     };
     body = <p className="muted">{desc[sp.type]}</p>;
   }
@@ -85,7 +86,7 @@ export function PropertyCard({ state, index, me, act, onTrade }: Props) {
   return (
     <div className="prop-card" style={{ ['--group' as string]: color }}>
       <div className={`prop-head ${sp.type === 'property' ? '' : 'plain'}`}>
-        <small>{sp.group ? GROUP_NAMES[sp.group] : ''}</small>
+        <small>{sp.group ? groupLabel(state.theme, sp.group) : ''}</small>
         <div className="prop-icon">{sp.icon}</div>
         <h3>{sp.name}</h3>
         {sp.city && <span className="prop-city">📍 {sp.city}</span>}
@@ -112,7 +113,7 @@ export function PropertyCard({ state, index, me, act, onTrade }: Props) {
               const o = state.players.find((p) => p.id === state.ownership[i].owner);
               return (
                 <span key={i} className="group-chip" style={{ borderColor: o?.color ?? 'transparent' }} title={o?.name ?? 'Libera'}>
-                  {BOARD[i].name} {o ? o.token : '—'}
+                  {nameOf(state.theme, i)} {o ? o.token : '—'}
                 </span>
               );
             })}

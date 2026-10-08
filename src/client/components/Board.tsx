@@ -1,4 +1,5 @@
 import { memo, type ReactNode } from 'react';
+import { spaceOf } from '../../shared/theme';
 import { BOARD, GROUP_COLORS } from '../../shared/board';
 import type { GameState, Player } from '../../shared/types';
 
@@ -47,7 +48,9 @@ const Tile = memo(function Tile({
   highlight,
   onTile,
   pot,
+  theme,
 }: {
+  theme: GameState['theme'];
   index: number;
   owner?: Player;
   houses: number;
@@ -56,7 +59,7 @@ const Tile = memo(function Tile({
   onTile: (i: number) => void;
   pot: number;
 }) {
-  const sp = BOARD[index];
+  const sp = spaceOf(theme, index);
   const { row, col, side } = tileCell(index);
   const color = sp.group ? GROUP_COLORS[sp.group] : undefined;
   const style = {
@@ -136,6 +139,7 @@ export function Board({ state, positions, highlight, onTile, center, movingId }:
               highlight={highlight === sp.index}
               onTile={onTile}
               pot={state.pot}
+              theme={state.theme}
             />
           );
         })}

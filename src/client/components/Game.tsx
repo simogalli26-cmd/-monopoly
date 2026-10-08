@@ -224,7 +224,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
       </div>
       <div className="center-status">
         <span className="round">Giro {view.round}</span>
-        {view.settings.freeParkingPot && <span className="pot-badge">🅿️ Montepremi ${view.pot}</span>}
+        {view.settings.freeParkingPot && <span className="pot-badge">🛋️ Montepremi ${view.pot}</span>}
       </div>
       <Dice dice={state.dice} seq={state.rollSeq} />
       {card && <CardView card={card} state={view} />}

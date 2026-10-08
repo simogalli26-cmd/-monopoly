@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { spaceOf } from '../../shared/theme';
 import { BOARD, GROUP_COLORS, GROUP_MEMBERS } from '../../shared/board';
 import { propertiesOf, validateTrade } from '../../shared/engine';
 import type { GameState, TradeDraft } from '../../shared/types';
@@ -28,7 +29,7 @@ function PropPicker({
   return (
     <div className="pick-list">
       {props.map((i) => {
-        const sp = BOARD[i];
+        const sp = spaceOf(state.theme, i);
         const own = state.ownership[i];
         const blocked = sp.type === 'property' && GROUP_MEMBERS[sp.group!].some((g) => state.ownership[g].houses > 0);
         return (

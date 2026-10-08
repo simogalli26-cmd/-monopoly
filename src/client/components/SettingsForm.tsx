@@ -9,8 +9,8 @@ interface Props {
 const TOGGLES: { key: keyof Settings; label: string; hint: string }[] = [
   { key: 'doubleRentOnSet', label: 'Affitto doppio sul gruppo completo', hint: 'Terreni senza case di un gruppo completo rendono il doppio.' },
   { key: 'auctions', label: 'Aste', hint: 'Se chi ci capita non compra, la proprietà va all’asta tra tutti.' },
-  { key: 'freeParkingPot', label: 'Montepremi al Parcheggio', hint: 'Tasse e multe finiscono nel piatto: chi si ferma al Parcheggio lo vince.' },
-  { key: 'doubleGoOnLanding', label: 'VIA doppio', hint: 'Fermarsi esattamente sul VIA paga 400.' },
+  { key: 'freeParkingPot', label: 'Montepremi all’Area Relax', hint: 'Tasse e multe finiscono nel piatto: chi si ferma all’Area Relax lo vince.' },
+  { key: 'doubleGoOnLanding', label: 'Partenza doppia', hint: 'Fermarsi esattamente sulla Partenza paga 400.' },
   { key: 'noRentInJail', label: 'Niente affitti in prigione', hint: 'Chi è in prigione non riscuote gli affitti.' },
   { key: 'evenBuild', label: 'Costruzione uniforme', hint: 'Le case vanno distribuite in modo uniforme nel gruppo.' },
   { key: 'randomOrder', label: 'Ordine casuale', hint: 'Mescola l’ordine dei giocatori all’inizio.' },

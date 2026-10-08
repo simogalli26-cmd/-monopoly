@@ -144,6 +144,8 @@ export interface DrawnCard {
 
 export interface GameState {
   id: string;
+  /** Custom board texts (null = default board). */
+  theme?: import('./theme').BoardTheme | null;
   settings: Settings;
   players: Player[];
   /** Indexed by board space; non-ownable spaces always have owner null. */
