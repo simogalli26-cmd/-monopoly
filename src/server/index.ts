@@ -34,6 +34,13 @@ interface Room {
 }
 
 const rooms = new Map<string, Room>();
+const stats = { gamesStarted: 0, gamesFinished: 0, peakOnline: 0, since: new Date().toISOString() };
+const siteConfig = {
+  supportUrl: process.env.SUPPORT_URL || '',
+  contactEmail: process.env.CONTACT_EMAIL || '',
+  issuesUrl: process.env.ISSUES_URL || 'https://github.com/simogalli26-cmd/-monopoly/issues',
+  owner: process.env.OWNER_NAME || '',
+};
 const app = express();
 const http = createServer(app);
 const io = new Server(http, { cors: { origin: '*' } });
@@ -136,7 +143,15 @@ setInterval(() => {
 
 // ---------------------------------------------------------------- sockets
 
+const broadcastOnline = () => {
+  const online = io.engine.clientsCount;
+  stats.peakOnline = Math.max(stats.peakOnline, online);
+  io.emit('lobby:online', online);
+};
+
 io.on('connection', (socket: Socket) => {
+  broadcastOnline();
+  socket.on('disconnect', broadcastOnline);
   let clientId = '';
   let roomId: string | null = null;
 
@@ -328,10 +343,12 @@ io.on('connection', (socket: Socket) => {
     if (r.seats.length < 2) return reply(ack, { ok: false, error: 'Servono almeno 2 giocatori' });
     const state = createGame({ id: r.id, settings: r.settings, seats: r.seats, now: Date.now(), theme: r.theme });
     r.status = 'playing';
+    stats.gamesStarted++;
     r.runner = new GameRunner(state, (s) => {
       io.to(`room:${r.id}`).emit('game:state', s);
       if (s.phase === 'over' && r.status !== 'finished') {
         r.status = 'finished';
+        stats.gamesFinished++;
         broadcastRoom(r);
       }
     });
@@ -411,6 +428,14 @@ io.on('connection', (socket: Socket) => {
 // ---------------------------------------------------------------- static
 
 app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.size }));
+app.get('/api/config', (_req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.json(siteConfig);
+});
+app.get('/api/stats', (_req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.json({ ...stats, online: io.engine.clientsCount, rooms: rooms.size, playing: [...rooms.values()].filter((r) => r.status === 'playing').length });
+});
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../dist/client');
 if (existsSync(root)) {

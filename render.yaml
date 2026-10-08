@@ -6,3 +6,13 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health
+    envVars:
+      # Link for donations (Ko-fi, PayPal.me, Stripe Payment Link…). Leave empty to hide the button.
+      - key: SUPPORT_URL
+        sync: false
+      # Email for custom board requests and the privacy policy.
+      - key: CONTACT_EMAIL
+        sync: false
+      # Name shown as data controller in the privacy page.
+      - key: OWNER_NAME
+        sync: false

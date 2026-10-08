@@ -4,6 +4,7 @@ import type { Profile } from '../shared/protocol';
 import type { BoardTheme } from '../shared/theme';
 import { BoardEditor, BoardImport, BoardList } from './components/BoardEditor';
 import { Home, type OfflineConfig } from './components/Home';
+import { Privacy, Terms } from './components/Legal';
 import { OfflineGame } from './components/OfflineGame';
 import { OnlineRoom } from './components/OnlineRoom';
 import { Toasts } from './components/Toasts';
@@ -58,7 +59,11 @@ export function App() {
   const editMatch = route.match(/^\/editor\/([\w-]+)/);
   const importMatch = route.match(/^\/board\/([\w-]+)/);
   let screen;
-  if (route === '/editor') {
+  if (route === '/privacy') {
+    screen = <Privacy onBack={() => go('/')} />;
+  } else if (route === '/termini') {
+    screen = <Terms onBack={() => go('/')} />;
+  } else if (route === '/editor') {
     screen = <BoardList onBack={() => go('/')} onEdit={(id) => go(`/editor/${id}`)} onPlay={playBoard} />;
   } else if (editMatch) {
     screen = <BoardEditor key={editMatch[1]} id={editMatch[1]} onBack={() => go('/editor')} onPlay={playBoard} />;
@@ -76,6 +81,7 @@ export function App() {
         pendingRoom={roomMatch?.[1]?.toUpperCase()}
         onJoin={(id) => go(`/room/${id}`)}
         onBoards={() => go('/editor')}
+        onNav={go}
         onOffline={(cfg) =>
           adBreak().then(() => {
             setOffline(cfg);

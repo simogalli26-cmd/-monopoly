@@ -4,6 +4,8 @@ import type { Profile, RoomSummary } from '../../shared/protocol';
 import type { BoardTheme } from '../../shared/theme';
 import type { BotLevel, Settings } from '../../shared/types';
 import { getBoard, listBoards } from '../boards';
+import { businessMailto, useSiteConfig } from '../site';
+import { Footer } from './Legal';
 import { getSocket, request } from '../net';
 import { loadPref, savePref } from '../profile';
 import { Modal } from './Modal';
@@ -24,6 +26,7 @@ interface Props {
   onJoin: (roomId: string) => void;
   onOffline: (cfg: OfflineConfig) => void;
   onBoards: () => void;
+  onNav: (route: string) => void;
 }
 
 const loadSettings = (): Settings => {
@@ -34,7 +37,9 @@ const loadSettings = (): Settings => {
   }
 };
 
-export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBoards }: Props) {
+export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBoards, onNav }: Props) {
+  const site = useSiteConfig();
+  const [online, setOnline] = useState(0);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [connected, setConnected] = useState(false);
   const [code, setCode] = useState(pendingRoom ?? '');
@@ -74,11 +79,13 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
     };
     const onDisconnect = () => setConnected(false);
     s.on('lobby:rooms', onRooms);
+    s.on('lobby:online', setOnline);
     s.on('connect', onConnect);
     s.on('disconnect', onDisconnect);
     if (s.connected) onConnect();
     return () => {
       s.off('lobby:rooms', onRooms);
+      s.off('lobby:online', setOnline);
       s.off('connect', onConnect);
       s.off('disconnect', onDisconnect);
     };
@@ -129,7 +136,7 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
           </span>
         </div>
         <div className={`conn ${connected ? 'on' : 'off'}`}>
-          <i /> {connected ? 'Online' : 'Offline'}
+          <i /> {connected ? (online > 1 ? `${online} giocatori online` : 'Online') : 'Offline'}
         </div>
       </header>
 
@@ -256,6 +263,31 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
           </ul>
         </section>
 
+        <section className="card business">
+          <div>
+            <h2>🏢 Un tabellone per la tua azienda o il tuo evento</h2>
+            <p className="muted">
+              Team building, feste, matrimoni, scuole, fiere: crea un Metropoly con i luoghi, i reparti e le battute del tuo gruppo. Fallo da solo con
+              l’editor oppure chiedi a noi di prepararlo.
+            </p>
+          </div>
+          <div className="row">
+            <button className="btn primary" onClick={onBoards}>
+              🎨 Apri l’editor
+            </button>
+            {site.contactEmail && (
+              <a className="btn" href={businessMailto(site.contactEmail)}>
+                ✉️ Richiedi un tabellone su misura
+              </a>
+            )}
+            {site.supportUrl && (
+              <a className="btn ghost" href={site.supportUrl} target="_blank" rel="noopener noreferrer">
+                ❤️ Supporta il gioco
+              </a>
+            )}
+          </div>
+        </section>
+
         <section className="card features">
           <h2>Cosa c'è di nuovo</h2>
           <ul>
@@ -265,10 +297,13 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
             <li>💳 <b>Gestione dei debiti</b>: ipoteca o vendi prima di finire in bancarotta</li>
             <li>⏱️ <b>Timer di turno</b> e pilota automatico per chi si disconnette</li>
             <li>📈 <b>Patrimonio netto</b> in tempo reale e classifica finale</li>
+            <li>🎨 <b>Tabelloni personalizzati</b>: crea il tuo con l’editor e condividilo con un link</li>
             <li>🏪 <b>Costruisci un impero di attività</b>: dal chiosco di hot dog al cinema, dall’elettronica al laboratorio AI</li>
           </ul>
         </section>
       </main>
+
+      <Footer onNav={onNav} />
 
       {modal === 'create' && (
         <Modal title="Crea una stanza" onClose={() => setModal(null)}>
