@@ -4,6 +4,8 @@ Gioco di proprietà multiplayer online ispirato a Monopoly (e a siti come monopo
 
 ## Funzionalità
 
+- **Tabellone di attività**: ogni proprietà è un'attività generica (chiosco hot dog, fast food, caffetteria, bowling, cinema, sneaker shop, telefonia, megastore di elettronica, palestra, spa, studio videogiochi, data center, laboratorio AI, resort, agenzia spaziale…) con icona e città sede, raggruppate in 8 settori. Nessun marchio reale.
+
 - **Lobby in tempo reale**: stanze pubbliche e private, gioco rapido, ingresso con codice o link d'invito, spettatori.
 - **Multiplayer online** (Socket.IO) da 2 a 8 giocatori, chat con reazioni rapide, riconnessione automatica.
 - **Partite contro i bot** anche offline, nel browser: 3 livelli di difficoltà. I bot comprano, partecipano alle aste, costruiscono, ipotecano, valutano e propongono scambi.
@@ -58,3 +60,16 @@ tests/        test Vitest
 ```
 
 Il server è autoritativo: i client inviano azioni, il server le valida con il motore e invia lo stato aggiornato a tutti.
+
+## Pubblicazione online
+
+Il gioco ha bisogno di un server Node sempre acceso (usa WebSocket), quindi **non** va su hosting solo statici come GitHub Pages, Netlify o Vercel.
+
+**Render (gratuito, consigliato)**
+1. Crea un account su [render.com](https://render.com) e collega GitHub.
+2. *New → Blueprint* e scegli questo repository: il file `render.yaml` configura tutto da solo.
+3. Dopo qualche minuto il gioco è online su `https://metropoly-xxxx.onrender.com`.
+
+Nel piano gratuito il server si “addormenta” dopo 15 minuti senza visite: la prima apertura può richiedere ~30 secondi.
+
+**Alternative**: Railway o Fly.io (usano il `Dockerfile`), oppure una VPS qualsiasi con `npm install && npm run build && npm start`.

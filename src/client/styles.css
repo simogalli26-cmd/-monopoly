@@ -1297,6 +1297,28 @@ input:disabled {
   font-size: 1.9cqw;
   line-height: 1;
 }
+.t-property .tile-body {
+  background: linear-gradient(to var(--inner, top), color-mix(in srgb, var(--group) 16%, transparent), transparent 75%);
+}
+.side-bottom.t-property {
+  --inner: bottom;
+}
+.side-left.t-property {
+  --inner: left;
+}
+.side-right.t-property {
+  --inner: right;
+}
+.t-property .tile-icon {
+  font-size: 2.5cqw;
+  width: 3.6cqw;
+  height: 3.6cqw;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--group) 22%, rgba(0, 0, 0, 0.25));
+  box-shadow: 0 0 0 0.15cqw color-mix(in srgb, var(--group) 55%, transparent);
+}
 .tile-name {
   font-size: 1.05cqw;
   font-weight: 600;
@@ -1701,6 +1723,17 @@ input:disabled {
   margin: 4px 0 0;
   font-size: 1.35rem;
 }
+.prop-icon {
+  font-size: 2.6rem;
+  line-height: 1.1;
+  margin-top: 6px;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
+}
+.prop-city {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  font-weight: 600;
+}
 .prop-price {
   position: absolute;
   right: 12px;
@@ -1905,6 +1938,11 @@ input:disabled {
   }
   .tile-icon {
     font-size: 3cqw;
+  }
+  .t-property .tile-icon {
+    font-size: 3.2cqw;
+    width: 4.6cqw;
+    height: 4.6cqw;
   }
   .tile-price {
     font-size: 1.7cqw;

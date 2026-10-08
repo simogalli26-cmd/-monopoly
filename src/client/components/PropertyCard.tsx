@@ -86,9 +86,9 @@ export function PropertyCard({ state, index, me, act, onTrade }: Props) {
     <div className="prop-card" style={{ ['--group' as string]: color }}>
       <div className={`prop-head ${sp.type === 'property' ? '' : 'plain'}`}>
         <small>{sp.group ? GROUP_NAMES[sp.group] : ''}</small>
-        <h3>
-          {sp.icon} {sp.name}
-        </h3>
+        <div className="prop-icon">{sp.icon}</div>
+        <h3>{sp.name}</h3>
+        {sp.city && <span className="prop-city">📍 {sp.city}</span>}
         {sp.price && <span className="prop-price">${sp.price}</span>}
       </div>
       <div className="prop-body">

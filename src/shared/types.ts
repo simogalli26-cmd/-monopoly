@@ -29,8 +29,10 @@ export interface Space {
   /** Short label used on small tiles. */
   short?: string;
   group?: Group;
-  /** Country flag / icon shown on the tile. */
+  /** Emoji shown on the tile (the business for properties). */
   icon?: string;
+  /** City where the business is located. */
+  city?: string;
   price?: number;
   /** For properties: [base, 1 house, 2, 3, 4, hotel]. */
   rent?: number[];

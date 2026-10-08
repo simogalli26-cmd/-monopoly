@@ -239,6 +239,7 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline }: Pr
             <li>💳 <b>Gestione dei debiti</b>: ipoteca o vendi prima di finire in bancarotta</li>
             <li>⏱️ <b>Timer di turno</b> e pilota automatico per chi si disconnette</li>
             <li>📈 <b>Patrimonio netto</b> in tempo reale e classifica finale</li>
+            <li>🏪 <b>Costruisci un impero di attività</b>: dal chiosco di hot dog al cinema, dall’elettronica al laboratorio AI</li>
           </ul>
         </section>
       </main>
