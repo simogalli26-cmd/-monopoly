@@ -149,7 +149,7 @@ export function Board({ state, positions, highlight, onTile, center, movingId }:
             const { x, y } = tileCenter(pos);
             const n = here.length;
             const angle = (k / Math.max(1, n)) * Math.PI * 2;
-            const spread = n > 1 ? 1.6 : 0;
+            const spread = n > 1 ? 2.1 : 0;
             const jailOffset = pos === 10 && p.inJail ? { dx: 1.2, dy: -1.2 } : pos === 10 ? { dx: -1.6, dy: 1.6 } : { dx: 0, dy: 0 };
             const active = state.players[state.turn]?.id === p.id;
             return (
