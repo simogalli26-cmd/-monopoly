@@ -8,6 +8,7 @@ import { sfx } from '../sound';
 import { Game } from './Game';
 import { RoomLobby } from './RoomLobby';
 import { toast } from './Toasts';
+import { msg, useT } from '../i18n';
 
 interface Props {
   roomId: string;
@@ -19,6 +20,7 @@ export function OnlineRoom({ roomId, profile, onExit }: Props) {
   const [room, setRoom] = useState<RoomView | null>(null);
   const [game, setGame] = useState<GameState | null>(null);
   const [chat, setChat] = useState<ChatMessage[]>([]);
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
   const me = getClientId();
 
@@ -37,7 +39,7 @@ export function OnlineRoom({ roomId, profile, onExit }: Props) {
     };
     const onKicked = (id: string) => {
       if (id === me) {
-        toast('Sei stato rimosso dalla stanza', 'error');
+        toast(t('Sei stato rimosso dalla stanza', 'You were removed from the room'), 'error');
         onExit();
       }
     };
@@ -71,10 +73,10 @@ export function OnlineRoom({ roomId, profile, onExit }: Props) {
     return (
       <div className="center-screen">
         <div className="card narrow">
-          <h2>Ops!</h2>
-          <p className="muted">{error}</p>
+          <h2>{t('Ops!', 'Oops!')}</h2>
+          <p className="muted">{msg(error)}</p>
           <button className="btn primary" onClick={onExit}>
-            Torna alla lobby
+            {t('Torna alla lobby', 'Back to lobby')}
           </button>
         </div>
       </div>
@@ -84,7 +86,7 @@ export function OnlineRoom({ roomId, profile, onExit }: Props) {
     return (
       <div className="center-screen">
         <div className="spinner" />
-        <p className="muted">Entro nella stanza {roomId}…</p>
+        <p className="muted">{t('Entro nella stanza', 'Joining room')} {roomId}…</p>
       </div>
     );
 

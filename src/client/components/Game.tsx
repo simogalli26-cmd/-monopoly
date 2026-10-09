@@ -12,6 +12,8 @@ import { Modal } from './Modal';
 import { ActionPanel, AuctionPanel, CardView, LogPanel, MyProps, PlayersPanel, TimerBar, TradesPanel, WinnerModal } from './Panels';
 import { PropertyCard } from './PropertyCard';
 import { toast } from './Toasts';
+import { LangToggle } from './LangToggle';
+import { msg, useT } from '../i18n';
 import { TradeModal } from './TradeModal';
 
 interface Props {
@@ -127,6 +129,7 @@ function useGameSounds(state: GameState, me: string | null) {
 }
 
 export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline, roomId }: Props) {
+  const t = useT();
   const { positions, moving } = useTokenAnimation(state);
   const [view, animating] = useFollowView(state);
   const [selected, setSelected] = useState<number | null>(null);
@@ -179,7 +182,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
       setBusy(false);
       if (!res.ok) {
         sfx.error();
-        toast(res.error ?? 'Azione non valida', 'error');
+        toast(msg(res.error) || t('Azione non valida', 'Invalid action'), 'error');
       }
       return res;
     },
@@ -204,7 +207,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
     const res = await act({ type: 'proposeTrade', offer: d });
     if (res.ok) {
       setTrade(null);
-      toast('Proposta inviata', 'success');
+      toast(t('Proposta inviata', 'Offer sent'), 'success');
     }
   };
 
@@ -224,8 +227,8 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
   const myTurn = !!meP && active.id === me;
   const exit = () => {
     if (state.phase !== 'over' && meP && !meP.bankrupt && !offline) {
-      if (!confirm('Uscire dalla partita? Verrai dichiarato in bancarotta.')) return;
-    } else if (state.phase !== 'over' && offline && !confirm('Abbandonare la partita?')) return;
+      if (!confirm(t('Uscire dalla partita? Verrai dichiarato in bancarotta.', 'Leave the game? You will be declared bankrupt.'))) return;
+    } else if (state.phase !== 'over' && offline && !confirm(t('Abbandonare la partita?', 'Quit the game?'))) return;
     onExit();
   };
 
@@ -235,8 +238,8 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
         Metro<b>poly</b>
       </div>
       <div className="center-status">
-        <span className="round">Giro {view.round}</span>
-        {view.settings.freeParkingPot && <span className="pot-badge">🛋️ Montepremi ${view.pot}</span>}
+        <span className="round">{t('Giro', 'Round')} {view.round}</span>
+        {view.settings.freeParkingPot && <span className="pot-badge">🛋️ {t('Montepremi', 'Jackpot')} ${view.pot}</span>}
       </div>
       <Dice dice={state.dice} seq={state.rollSeq} />
       {card && <CardView card={card} state={view} />}
@@ -244,13 +247,15 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
         <AuctionPanel state={state} me={me} act={act} now={now} />
       ) : view.phase === 'over' ? (
         <div className="actions">
-          <p>🏆 Partita terminata</p>
+          <p>🏆 {t('Partita terminata', 'Game over')}</p>
         </div>
       ) : (
         animating ? (
           <div className="actions">
             <p className="muted watching">
-              {activePlayer(view).id === me ? '🎲 Vediamo dove arrivi…' : `${activePlayer(view).token} ${activePlayer(view).name} sta giocando…`}
+              {activePlayer(view).id === me
+                ? t('🎲 Vediamo dove arrivi…', '🎲 Let’s see where you land…')
+                : `${activePlayer(view).token} ${activePlayer(view).name} ${t('sta giocando…', 'is playing…')}`}
             </p>
           </div>
         ) : (
@@ -273,17 +278,18 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
           </span>
         </div>
         <div className="turn-pill" style={{ ['--pc' as string]: active.color }}>
-          {view.phase === 'over' ? 'Fine partita' : myTurn ? '⭐ Tocca a te!' : `Turno di ${active.token} ${active.name}`}
+          {view.phase === 'over' ? t('Fine partita', 'Game over') : myTurn ? t('⭐ Tocca a te!', '⭐ Your turn!') : `${t('Turno di', 'Turn:')} ${active.token} ${active.name}`}
         </div>
         <div className="header-actions">
           {roomId && (
             <span className="muted small hide-sm">
-              Stanza <code>{roomId}</code>
+              {t('Stanza', 'Room')} <code>{roomId}</code>
             </span>
           )}
+          <LangToggle />
           <button
             className="icon-btn"
-            title="Audio"
+            title={t('Audio', 'Sound')}
             onClick={() => {
               setSound(!sound);
               setSoundState(!sound);
@@ -292,7 +298,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
             {sound ? '🔊' : '🔇'}
           </button>
           <button className="btn small ghost" onClick={exit}>
-            Esci
+            {t('Esci', 'Exit')}
           </button>
         </div>
       </header>
@@ -303,7 +309,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
           <TradesPanel state={state} me={me} act={act} onCounter={counter} />
           {meP && !meP.bankrupt && state.phase !== 'over' && (
             <button className="btn wide" onClick={() => setTrade({})}>
-              🤝 Nuovo scambio
+              🤝 {t('Nuovo scambio', 'New trade')}
             </button>
           )}
         </aside>
@@ -322,7 +328,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
         <aside className="side right">
           <div className="tabs">
             <button className={tab === 'log' ? 'on' : ''} onClick={() => setTab('log')}>
-              Registro
+              {t('Registro', 'Log')}
             </button>
             {chat && (
               <button
@@ -337,7 +343,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
             )}
             {meP && (
               <button className={tab === 'props' ? 'on' : ''} onClick={() => setTab('props')}>
-                Proprietà
+                {t('Proprietà', 'Properties')}
               </button>
             )}
           </div>

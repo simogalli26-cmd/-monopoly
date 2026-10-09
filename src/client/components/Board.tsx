@@ -1,5 +1,7 @@
 import { memo, type ReactNode } from 'react';
 import { spaceOf } from '../../shared/theme';
+import type { Lang } from '../../shared/i18n';
+import { useLang } from '../i18n';
 import { BOARD, GROUP_COLORS } from '../../shared/board';
 import type { GameState, Player } from '../../shared/types';
 
@@ -49,8 +51,10 @@ const Tile = memo(function Tile({
   onTile,
   pot,
   theme,
+  lang,
 }: {
   theme: GameState['theme'];
+  lang: Lang;
   index: number;
   owner?: Player;
   houses: number;
@@ -59,7 +63,7 @@ const Tile = memo(function Tile({
   onTile: (i: number) => void;
   pot: number;
 }) {
-  const sp = spaceOf(theme, index);
+  const sp = spaceOf(theme, index, lang);
   const { row, col, side } = tileCell(index);
   const color = sp.group ? GROUP_COLORS[sp.group] : undefined;
   const style = {
@@ -83,7 +87,7 @@ const Tile = memo(function Tile({
         <span className="corner-icon">{sp.icon}</span>
         <span className="corner-name">{sp.short ?? sp.name}</span>
         {sp.type === 'parking' && pot > 0 && <span className="pot">${pot}</span>}
-        {sp.type === 'jail' && <span className="corner-sub">solo in visita</span>}
+        {sp.type === 'jail' && <span className="corner-sub">{lang === 'en' ? 'just visiting' : 'solo in visita'}</span>}
       </button>
     );
   }
@@ -117,6 +121,7 @@ const Tile = memo(function Tile({
 });
 
 export function Board({ state, positions, highlight, onTile, center, movingId }: Props) {
+  const lang = useLang();
   const playersAt = new Map<number, Player[]>();
   for (const p of state.players) {
     if (p.bankrupt) continue;
@@ -140,6 +145,7 @@ export function Board({ state, positions, highlight, onTile, center, movingId }:
               onTile={onTile}
               pot={state.pot}
               theme={state.theme}
+              lang={lang}
             />
           );
         })}

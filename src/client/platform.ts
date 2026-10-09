@@ -31,6 +31,8 @@ function detect(): PortalName {
 }
 
 export const portal: PortalName = detect();
+/** Inside a game portal: no external links, no own promotions. */
+export const isPortal = portal !== 'web';
 let ready: Promise<boolean> | null = null;
 let muteHandler: (muted: boolean) => void = () => {};
 

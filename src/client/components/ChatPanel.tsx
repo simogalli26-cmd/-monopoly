@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from '../../shared/protocol';
+import { useLang, useT } from '../i18n';
 
 interface Props {
   messages: ChatMessage[];
@@ -7,9 +8,11 @@ interface Props {
   me: string | null;
 }
 
-const QUICK = ['👍', '😂', '😱', '🔥', 'GG!', 'Affare?'];
+const QUICK = ['👍', '😂', '😱', '🔥', 'GG!', '🤝?'];
 
 export function ChatPanel({ messages, onSend, me }: Props) {
+  const t = useT();
+  const lang = useLang();
   const [text, setText] = useState('');
   const list = useRef<HTMLDivElement>(null);
 
@@ -26,11 +29,11 @@ export function ChatPanel({ messages, onSend, me }: Props) {
   return (
     <div className="chat">
       <div className="chat-list" ref={list}>
-        {messages.length === 0 && <p className="muted small">Nessun messaggio. Saluta gli altri giocatori!</p>}
+        {messages.length === 0 && <p className="muted small">{t('Nessun messaggio. Saluta gli altri giocatori!', 'No messages yet. Say hi to the other players!')}</p>}
         {messages.map((m) =>
           m.system ? (
             <div key={m.id} className="chat-sys">
-              {m.text}
+              {lang === 'en' && m.en ? m.en : m.text}
             </div>
           ) : (
             <div key={m.id} className={`chat-msg ${m.from === me ? 'mine' : ''}`}>
@@ -53,8 +56,8 @@ export function ChatPanel({ messages, onSend, me }: Props) {
           send(text);
         }}
       >
-        <input value={text} maxLength={240} placeholder="Scrivi un messaggio…" onChange={(e) => setText(e.target.value)} />
-        <button className="btn small" aria-label="Invia">
+        <input value={text} maxLength={240} placeholder={t('Scrivi un messaggio…', 'Type a message…')} onChange={(e) => setText(e.target.value)} />
+        <button className="btn small" aria-label={t('Invia', 'Send')}>
           ➤
         </button>
       </form>

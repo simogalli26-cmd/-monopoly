@@ -39,6 +39,8 @@ export interface ChatMessage {
   name: string;
   color: string;
   text: string;
+  /** English version for system messages. */
+  en?: string;
   at: number;
   system?: boolean;
 }

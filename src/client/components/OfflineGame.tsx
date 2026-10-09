@@ -5,6 +5,7 @@ import type { Profile } from '../../shared/protocol';
 import { GameRunner } from '../../shared/runner';
 import type { Action, GameState, PlayerSeat } from '../../shared/types';
 import { adBreak } from '../platform';
+import { tr } from '../i18n';
 import { Game } from './Game';
 import type { OfflineConfig } from './Home';
 
@@ -15,7 +16,7 @@ function build(config: OfflineConfig, profile: Profile): GameState {
   const colors = PLAYER_COLORS.filter((c) => c !== profile.color);
   const tokens = PLAYER_TOKENS.filter((t) => t !== profile.token);
   const seats: PlayerSeat[] = [
-    { id: ME, name: profile.name || 'Tu', color: profile.color, token: profile.token, isBot: false },
+    { id: ME, name: profile.name || tr('Tu', 'You'), color: profile.color, token: profile.token, isBot: false },
     ...Array.from({ length: config.bots }, (_, i) => ({
       id: `bot${i}`,
       name: `🤖 ${BOT_NAMES[i]}`,

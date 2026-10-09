@@ -6,6 +6,9 @@ import type { BotLevel, Settings } from '../../shared/types';
 import { getBoard, listBoards } from '../boards';
 import { businessMailto, useSiteConfig } from '../site';
 import { Footer } from './Legal';
+import { LangToggle } from './LangToggle';
+import { msg, useT } from '../i18n';
+import { isPortal } from '../platform';
 import { getSocket, request } from '../net';
 import { loadPref, savePref } from '../profile';
 import { Modal } from './Modal';
@@ -38,6 +41,7 @@ const loadSettings = (): Settings => {
 };
 
 export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBoards, onNav }: Props) {
+  const t = useT();
   const site = useSiteConfig();
   const [online, setOnline] = useState(0);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
@@ -58,9 +62,9 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
   };
   const boardPicker = (
     <label className="field">
-      <span>Tabellone</span>
+      <span>{t('Tabellone', 'Board')}</span>
       <select value={getBoard(boardId) ? boardId : ''} onChange={(e) => setBoardId(e.target.value)}>
-        <option value="">Classico Metropoly</option>
+        <option value="">{t('Classico Metropoly', 'Classic Metropoly')}</option>
         {boards.map((b) => (
           <option key={b.id} value={b.id}>
             🎨 {b.title}
@@ -96,29 +100,30 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
     savePref('settings', JSON.stringify(s));
   };
 
-  const needName = () => {
-    if (profile.name.trim()) return false;
-    toast('Scegli prima un nickname', 'error');
-    document.getElementById('nick')?.focus();
-    return true;
+  /** Players can start right away: an empty nickname gets a random one. */
+  const ensureProfile = (): Profile => {
+    if (profile.name.trim()) return profile;
+    const p = { ...profile, name: `${t('Giocatore', 'Player')}${100 + Math.floor(Math.random() * 900)}` };
+    setProfile(p);
+    return p;
   };
 
   const create = async () => {
-    if (needName()) return;
-    const res = await request<string>('room:create', { name: roomName, isPrivate, settings, profile, theme: getBoard(boardId) });
-    if (!res.ok) return toast(res.error ?? 'Impossibile creare la stanza', 'error');
+    const me = ensureProfile();
+    const res = await request<string>('room:create', { name: roomName, isPrivate, settings, profile: me, theme: getBoard(boardId) });
+    if (!res.ok) return toast(msg(res.error) || t('Impossibile creare la stanza', 'Unable to create the room'), 'error');
     setModal(null);
     onJoin(res.data!);
   };
 
   const join = (id: string) => {
-    if (needName()) return;
     if (!id.trim()) return;
+    ensureProfile();
     onJoin(id.trim().toUpperCase());
   };
 
   const quickPlay = () => {
-    if (needName()) return;
+    ensureProfile();
     const free = rooms.find((r) => r.status === 'waiting' && r.players < r.maxPlayers);
     if (free) return join(free.id);
     setModal('create');
@@ -135,34 +140,39 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
             Metro<b>poly</b>
           </span>
         </div>
-        <div className={`conn ${connected ? 'on' : 'off'}`}>
-          <i /> {connected ? (online > 1 ? `${online} giocatori online` : 'Online') : 'Offline'}
+        <div className="header-actions">
+          <div className={`conn ${connected ? 'on' : 'off'}`}>
+            <i /> {connected ? (online > 1 ? t(`${online} giocatori online`, `${online} players online`) : 'Online') : 'Offline'}
+          </div>
+          <LangToggle />
         </div>
       </header>
 
       <main className="home-grid">
         <section className="card hero">
           <h1>
-            Compra. Costruisci. <span className="grad">Domina il mondo.</span>
+            {t('Compra. Costruisci.', 'Buy. Build.')} <span className="grad">{t('Domina il mondo.', 'Rule the world.')}</span>
           </h1>
           <p className="muted">
-            Il classico gioco delle proprietà, reinventato: partite online con gli amici, bot intelligenti, aste in tempo
-            reale e scambi avanzati.
+            {t(
+              'Il classico gioco delle proprietà, reinventato: partite online con gli amici, bot intelligenti, aste in tempo reale e scambi avanzati.',
+              'The classic property trading game, reinvented: online games with friends, smart bots, live auctions and advanced trades.',
+            )}
           </p>
 
           <div className="profile">
             <label className="field grow">
-              <span>Il tuo nickname</span>
+              <span>{t('Il tuo nickname', 'Your nickname')}</span>
               <input
                 id="nick"
                 maxLength={18}
-                placeholder="Es. Tycoon"
+                placeholder={t('Es. Tycoon', 'e.g. Tycoon')}
                 value={profile.name}
                 onChange={(e) => setProfile({ ...profile, name: e.target.value })}
               />
             </label>
             <div className="field">
-              <span>Pedina</span>
+              <span>{t('Pedina', 'Token')}</span>
               <div className="token-picker">
                 {PLAYER_TOKENS.map((t) => (
                   <button
@@ -177,7 +187,7 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
               </div>
             </div>
             <div className="field">
-              <span>Colore</span>
+              <span>{t('Colore', 'Color')}</span>
               <div className="color-picker">
                 {PLAYER_COLORS.map((c) => (
                   <button
@@ -194,16 +204,16 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
 
           <div className="hero-actions">
             <button className="btn primary big" onClick={quickPlay} disabled={!connected}>
-              ⚡ Gioco rapido
+              ⚡ {t('Gioco rapido', 'Quick play')}
             </button>
-            <button className="btn big" onClick={() => !needName() && setModal('create')} disabled={!connected}>
-              ＋ Crea stanza
+            <button className="btn big" onClick={() => setModal('create')} disabled={!connected}>
+              ＋ {t('Crea stanza', 'Create room')}
             </button>
-            <button className="btn big ghost" onClick={() => !needName() && setModal('offline')}>
-              🤖 Contro i bot
+            <button className="btn big ghost" onClick={() => setModal('offline')}>
+              🤖 {t('Contro i bot', 'Play vs bots')}
             </button>
             <button className="btn big ghost" onClick={onBoards}>
-              🎨 Crea il tuo tabellone
+              🎨 {t('Crea il tuo tabellone', 'Make your own board')}
             </button>
           </div>
           <form
@@ -213,30 +223,30 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
               join(code);
             }}
           >
-            <input placeholder="Codice stanza" value={code} maxLength={8} onChange={(e) => setCode(e.target.value.toUpperCase())} />
+            <input placeholder={t('Codice stanza', 'Room code')} value={code} maxLength={8} onChange={(e) => setCode(e.target.value.toUpperCase())} />
             <button className="btn" disabled={!connected || !code}>
-              Entra
+              {t('Entra', 'Join')}
             </button>
           </form>
         </section>
 
         <section className="card rooms">
           <div className="rooms-head">
-            <h2>Stanze pubbliche</h2>
+            <h2>{t('Stanze pubbliche', 'Public rooms')}</h2>
             <div className="seg">
               <button className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>
-                Tutte
+                {t('Tutte', 'All')}
               </button>
               <button className={filter === 'waiting' ? 'on' : ''} onClick={() => setFilter('waiting')}>
-                In attesa
+                {t('In attesa', 'Waiting')}
               </button>
             </div>
           </div>
-          {!connected && <p className="muted empty">Connessione al server… Puoi comunque giocare contro i bot.</p>}
+          {!connected && <p className="muted empty">{t('Connessione al server… Puoi comunque giocare contro i bot.', 'Connecting to the server… You can still play against bots.')}</p>}
           {connected && visible.length === 0 && (
             <div className="empty">
               <div className="empty-icon">🏙️</div>
-              <p className="muted">Nessuna stanza aperta. Creane una e invita i tuoi amici!</p>
+              <p className="muted">{t('Nessuna stanza aperta. Creane una e invita i tuoi amici!', 'No open rooms. Create one and invite your friends!')}</p>
             </div>
           )}
           <ul className="room-list">
@@ -250,12 +260,12 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
                   <div className="room-tokens">{r.tokens.join(' ')}</div>
                 </div>
                 <div className="room-side">
-                  <span className={`badge ${r.status}`}>{r.status === 'waiting' ? 'In attesa' : 'In corso'}</span>
+                  <span className={`badge ${r.status}`}>{r.status === 'waiting' ? t('In attesa', 'Waiting') : t('In corso', 'Playing')}</span>
                   <span className="muted">
                     {r.players}/{r.maxPlayers}
                   </span>
                   <button className="btn small" onClick={() => join(r.id)}>
-                    {r.status === 'waiting' && r.players < r.maxPlayers ? 'Entra' : 'Guarda'}
+                    {r.status === 'waiting' && r.players < r.maxPlayers ? t('Entra', 'Join') : t('Guarda', 'Watch')}
                   </button>
                 </div>
               </li>
@@ -265,40 +275,48 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
 
         <section className="card business">
           <div>
-            <h2>🏢 Un tabellone per la tua azienda o il tuo evento</h2>
+            <h2>{t('🎨 Crea il tuo tabellone', '🎨 Make your own board')}</h2>
             <p className="muted">
-              Team building, feste, matrimoni, scuole, fiere: crea un Metropoly con i luoghi, i reparti e le battute del tuo gruppo. Fallo da solo con
-              l’editor oppure chiedi a noi di prepararlo.
+              {t(
+                'Feste, amici, ufficio, scuola: crea un Metropoly con i luoghi, le persone e le battute del tuo gruppo e condividilo con un link.',
+                'Parties, friends, office, school: build a Metropoly with your group’s places, people and inside jokes, and share it with a link.',
+              )}
             </p>
           </div>
           <div className="row">
             <button className="btn primary" onClick={onBoards}>
-              🎨 Apri l’editor
+              🎨 {t('Apri l’editor', 'Open the editor')}
             </button>
-            {site.contactEmail && (
+            {!isPortal && site.contactEmail && (
               <a className="btn" href={businessMailto(site.contactEmail)}>
-                ✉️ Richiedi un tabellone su misura
+                ✉️ {t('Richiedi un tabellone su misura', 'Order a custom board')}
               </a>
             )}
-            {site.supportUrl && (
+            {!isPortal && site.supportUrl && (
               <a className="btn ghost" href={site.supportUrl} target="_blank" rel="noopener noreferrer">
-                ❤️ Supporta il gioco
+                ❤️ {t('Supporta il gioco', 'Support the game')}
               </a>
             )}
           </div>
         </section>
 
         <section className="card features">
-          <h2>Cosa c'è di nuovo</h2>
+          <h2>{t('Cosa c’è di nuovo', 'What’s inside')}</h2>
           <ul>
-            <li>🧠 <b>Bot con 3 livelli</b> che comprano, costruiscono, fanno aste e propongono scambi</li>
-            <li>🔨 <b>Aste in tempo reale</b> con timer che si estende ad ogni offerta</li>
-            <li>🤝 <b>Scambi completi</b>: proprietà, contanti e carte “esci di prigione”, con controproposte</li>
-            <li>💳 <b>Gestione dei debiti</b>: ipoteca o vendi prima di finire in bancarotta</li>
-            <li>⏱️ <b>Timer di turno</b> e pilota automatico per chi si disconnette</li>
-            <li>📈 <b>Patrimonio netto</b> in tempo reale e classifica finale</li>
-            <li>🎨 <b>Tabelloni personalizzati</b>: crea il tuo con l’editor e condividilo con un link</li>
-            <li>🏪 <b>Costruisci un impero di attività</b>: dal chiosco di hot dog al cinema, dall’elettronica al laboratorio AI</li>
+            {[
+              ['🧠', t('Bot con 3 livelli', '3 bot levels'), t('che comprano, costruiscono, fanno aste e propongono scambi', 'that buy, build, bid and propose trades')],
+              ['🔨', t('Aste in tempo reale', 'Live auctions'), t('con timer che si estende ad ogni offerta', 'with a timer that extends on every bid')],
+              ['🤝', t('Scambi completi', 'Full trades'), t('proprietà, contanti e carte “esci di prigione”, con controproposte', 'properties, cash and jail-free cards, with counter-offers')],
+              ['💳', t('Gestione dei debiti', 'Debt handling'), t('ipoteca o vendi prima di finire in bancarotta', 'mortgage or sell before going bankrupt')],
+              ['⏱️', t('Timer di turno', 'Turn timer'), t('e pilota automatico per chi si disconnette', 'and autopilot for disconnected players')],
+              ['📈', t('Patrimonio netto', 'Net worth'), t('in tempo reale e classifica finale', 'live, plus final ranking')],
+              ['🎨', t('Tabelloni personalizzati', 'Custom boards'), t('crea il tuo con l’editor e condividilo con un link', 'build yours in the editor and share it with a link')],
+              ['🏪', t('Un impero di attività', 'A business empire'), t('dal chiosco di hot dog al cinema, fino al laboratorio AI', 'from the hot dog stand to the cinema and the AI lab')],
+            ].map(([icon, title, desc]) => (
+              <li key={icon}>
+                {icon} <b>{title}</b> {desc}
+              </li>
+            ))}
           </ul>
         </section>
       </main>
@@ -306,37 +324,37 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
       <Footer onNav={onNav} />
 
       {modal === 'create' && (
-        <Modal title="Crea una stanza" onClose={() => setModal(null)}>
+        <Modal title={t('Crea una stanza', 'Create a room')} onClose={() => setModal(null)}>
           <label className="field">
-            <span>Nome della stanza</span>
-            <input value={roomName} maxLength={32} placeholder={`Stanza di ${profile.name || '…'}`} onChange={(e) => setRoomName(e.target.value)} />
+            <span>{t('Nome della stanza', 'Room name')}</span>
+            <input value={roomName} maxLength={32} placeholder={t(`Stanza di ${profile.name || '…'}`, `${profile.name || '…'}’s room`)} onChange={(e) => setRoomName(e.target.value)} />
           </label>
           <label className="toggle">
             <input type="checkbox" checked={isPrivate} onChange={(e) => setPrivate(e.target.checked)} />
             <span className="switch" aria-hidden />
             <span className="toggle-text">
-              <b>Stanza privata</b>
-              <small>Non compare nella lista: si entra solo con il link o il codice.</small>
+              <b>{t('Stanza privata', 'Private room')}</b>
+              <small>{t('Non compare nella lista: si entra solo con il link o il codice.', 'Not listed: players join only with the link or the code.')}</small>
             </span>
           </label>
           {boardPicker}
           <SettingsForm value={settings} onChange={updateSettings} />
           <div className="modal-actions">
             <button className="btn ghost" onClick={() => setModal(null)}>
-              Annulla
+              {t('Annulla', 'Cancel')}
             </button>
             <button className="btn primary" onClick={create}>
-              Crea stanza
+              {t('Crea stanza', 'Create room')}
             </button>
           </div>
         </Modal>
       )}
 
       {modal === 'offline' && (
-        <Modal title="Partita contro i bot" onClose={() => setModal(null)}>
+        <Modal title={t('Partita contro i bot', 'Game vs bots')} onClose={() => setModal(null)}>
           <div className="settings-grid">
             <label className="field">
-              <span>Avversari</span>
+              <span>{t('Avversari', 'Opponents')}</span>
               <select value={bots} onChange={(e) => setBots(+e.target.value)}>
                 {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                   <option key={n} value={n}>
@@ -346,11 +364,11 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
               </select>
             </label>
             <label className="field">
-              <span>Difficoltà</span>
+              <span>{t('Difficoltà', 'Difficulty')}</span>
               <select value={level} onChange={(e) => setLevel(e.target.value as BotLevel)}>
-                <option value="easy">Facile</option>
-                <option value="normal">Media</option>
-                <option value="hard">Difficile</option>
+                <option value="easy">{t('Facile', 'Easy')}</option>
+                <option value="normal">{t('Media', 'Normal')}</option>
+                <option value="hard">{t('Difficile', 'Hard')}</option>
               </select>
             </label>
           </div>
@@ -358,16 +376,17 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
           <SettingsForm value={settings} onChange={updateSettings} compact />
           <div className="modal-actions">
             <button className="btn ghost" onClick={() => setModal(null)}>
-              Annulla
+              {t('Annulla', 'Cancel')}
             </button>
             <button
               className="btn primary"
               onClick={() => {
+                ensureProfile();
                 setModal(null);
                 onOffline({ bots, level, settings: { ...settings, maxPlayers: 8 }, theme: getBoard(boardId) });
               }}
             >
-              Gioca
+              {t('Gioca', 'Play')}
             </button>
           </div>
         </Modal>

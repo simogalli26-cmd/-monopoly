@@ -1,4 +1,5 @@
-import { BOARD, GROUP_MEMBERS, GROUP_NAMES } from './board';
+import { BOARD, GROUP_MEMBERS, GROUP_NAMES, GROUP_NAMES_EN, NAMES_EN } from './board';
+import type { Lang } from './i18n';
 import type { Deck, Group, Space } from './types';
 
 /** Texts a custom board can change. Prices and rules always stay the same. */
@@ -18,6 +19,8 @@ export interface BoardTheme {
 }
 
 export const DECK_NAMES: Record<Deck, string> = { chance: 'Colpo di Scena', chest: 'Notizie di Mercato' };
+export const DECK_NAMES_EN: Record<Deck, string> = { chance: 'Plot Twist', chest: 'Market News' };
+export const deckName = (deck: Deck, lang: Lang = 'it') => (lang === 'en' ? DECK_NAMES_EN : DECK_NAMES)[deck];
 export const DECK_ICONS: Record<Deck, string> = { chance: '🎭', chest: '📰' };
 
 /** Spaces whose name, icon and city can be customised. */
@@ -31,25 +34,27 @@ export const MAX_SHORT = 14;
 export const MAX_TITLE = 40;
 
 /** Board space with the theme's texts applied. */
-export function spaceOf(theme: BoardTheme | null | undefined, index: number): Space {
-  const base = BOARD[index];
+export function spaceOf(theme: BoardTheme | null | undefined, index: number, lang: Lang = 'it'): Space {
+  let base = BOARD[index];
+  if (lang === 'en' && NAMES_EN[index]) base = { ...base, name: NAMES_EN[index][0], short: NAMES_EN[index][1] };
   const o = theme?.spaces?.[index];
   if (!o) return base;
   return { ...base, name: o.name || base.name, short: o.short || (o.name ? undefined : base.short), icon: o.icon || base.icon, city: o.city ?? base.city };
 }
 
-export const nameOf = (theme: BoardTheme | null | undefined, index: number) => spaceOf(theme, index).name;
+export const nameOf = (theme: BoardTheme | null | undefined, index: number, lang: Lang = 'it') => spaceOf(theme, index, lang).name;
 
-export const shortOf = (theme: BoardTheme | null | undefined, index: number) => {
-  const sp = spaceOf(theme, index);
+export const shortOf = (theme: BoardTheme | null | undefined, index: number, lang: Lang = 'it') => {
+  const sp = spaceOf(theme, index, lang);
   return sp.short ?? sp.name;
 };
 
-export const groupLabel = (theme: BoardTheme | null | undefined, g: Group) => theme?.groups?.[g] || GROUP_NAMES[g];
+export const groupLabel = (theme: BoardTheme | null | undefined, g: Group, lang: Lang = 'it') =>
+  theme?.groups?.[g] || (lang === 'en' ? GROUP_NAMES_EN : GROUP_NAMES)[g];
 
 /** Card texts may reference spaces as {index}. */
-export const cardText = (theme: BoardTheme | null | undefined, text: string) =>
-  text.replace(/\{(\d+)\}/g, (_, i) => nameOf(theme, Number(i)));
+export const cardText = (theme: BoardTheme | null | undefined, text: string, lang: Lang = 'it') =>
+  text.replace(/\{(\d+)\}/g, (_, i) => nameOf(theme, Number(i), lang));
 
 const clean = (v: unknown, max: number) =>
   String(v ?? '')

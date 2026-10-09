@@ -4,6 +4,7 @@ import type { ChatMessage, RoomView } from '../../shared/protocol';
 import type { BotLevel, Settings } from '../../shared/types';
 import { getBoard, listBoards } from '../boards';
 import { request } from '../net';
+import { msg, useT } from '../i18n';
 import { roomInviteLink } from '../platform';
 import { BoardPreview } from './BoardEditor';
 import { ChatPanel } from './ChatPanel';
@@ -18,9 +19,10 @@ interface Props {
   onLeave: () => void;
 }
 
-const LEVEL: Record<BotLevel, string> = { easy: 'Facile', normal: 'Medio', hard: 'Difficile' };
+const LEVEL: Record<BotLevel, [string, string]> = { easy: ['facile', 'easy'], normal: ['medio', 'normal'], hard: ['difficile', 'hard'] };
 
 export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
+  const t = useT();
   const isHost = room.hostId === me;
   const mySeat = room.seats.find((s) => s.id === me);
   const [botLevel, setBotLevel] = useState<BotLevel>('normal');
@@ -29,14 +31,14 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
 
   const call = async (event: string, payload?: unknown) => {
     const res = await request(event, payload);
-    if (!res.ok && res.error) toast(res.error, 'error');
+    if (!res.ok && res.error) toast(msg(res.error), 'error');
   };
 
   const copy = async () => {
     const link = await roomInviteLink(room.id);
     try {
       await navigator.clipboard.writeText(link);
-      toast('Link copiato! Invialo ai tuoi amici.', 'success');
+      toast(t('Link copiato! Invialo ai tuoi amici.', 'Link copied! Send it to your friends.'), 'success');
     } catch {
       toast(link);
     }
@@ -46,16 +48,16 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
     <div className="room-lobby">
       <header className="home-header">
         <button className="btn ghost" onClick={onLeave}>
-          ← Esci
+          ← {t('Esci', 'Leave')}
         </button>
         <div className="room-title">
           <h1>{room.name}</h1>
           <span className="muted">
-            Codice <code>{room.id}</code> {room.isPrivate && '· 🔒 privata'}
+            {t('Codice', 'Code')} <code>{room.id}</code> {room.isPrivate && t('· 🔒 privata', '· 🔒 private')}
           </span>
         </div>
         <button className="btn" onClick={copy}>
-          🔗 Invita
+          🔗 {t('Invita', 'Invite')}
         </button>
       </header>
 
@@ -63,14 +65,14 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
         <section className="card">
           <div className="rooms-head">
             <h2>
-              Giocatori {room.seats.length}/{room.settings.maxPlayers}
+              {t('Giocatori', 'Players')} {room.seats.length}/{room.settings.maxPlayers}
             </h2>
             {isHost && (
               <div className="add-bot">
                 <select value={botLevel} onChange={(e) => setBotLevel(e.target.value as BotLevel)}>
-                  <option value="easy">Bot facile</option>
-                  <option value="normal">Bot medio</option>
-                  <option value="hard">Bot difficile</option>
+                  <option value="easy">{t('Bot facile', 'Easy bot')}</option>
+                  <option value="normal">{t('Bot medio', 'Normal bot')}</option>
+                  <option value="hard">{t('Bot difficile', 'Hard bot')}</option>
                 </select>
                 <button
                   className="btn small"
@@ -89,13 +91,17 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
                 <span className="seat-name">
                   <b>{s.name}</b>
                   <small className="muted">
-                    {s.id === room.hostId ? '👑 Host' : s.isBot ? `Bot ${LEVEL[s.botLevel ?? 'normal']}` : 'Giocatore'}
-                    {s.id === me && ' · tu'}
-                    {!s.connected && ' · disconnesso'}
+                    {s.id === room.hostId
+                      ? '👑 Host'
+                      : s.isBot
+                        ? `Bot ${t(...LEVEL[s.botLevel ?? 'normal'])}`
+                        : t('Giocatore', 'Player')}
+                    {s.id === me && t(' · tu', ' · you')}
+                    {!s.connected && t(' · disconnesso', ' · disconnected')}
                   </small>
                 </span>
                 {isHost && s.id !== me && (
-                  <button className="icon-btn" onClick={() => call('room:kick', { id: s.id })} aria-label="Rimuovi">
+                  <button className="icon-btn" onClick={() => call('room:kick', { id: s.id })} aria-label={t('Rimuovi', 'Remove')}>
                     ✕
                   </button>
                 )}
@@ -104,14 +110,14 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
             {Array.from({ length: Math.max(0, room.settings.maxPlayers - room.seats.length) }, (_, i) => (
               <li key={`empty${i}`} className="seat empty-seat">
                 <span className="seat-token">·</span>
-                <span className="muted">Posto libero</span>
+                <span className="muted">{t('Posto libero', 'Free seat')}</span>
               </li>
             ))}
           </ul>
 
           {mySeat && (
             <div className="my-look">
-              <span className="muted">Il tuo aspetto</span>
+              <span className="muted">{t('Il tuo aspetto', 'Your look')}</span>
               <div className="token-picker">
                 {PLAYER_TOKENS.map((t) => {
                   const taken = room.seats.some((s) => s.id !== me && s.token === t);
@@ -147,23 +153,25 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
           <div className="start-row">
             {isHost ? (
               <button className="btn primary big" disabled={room.seats.length < 2} onClick={() => call('room:start')}>
-                ▶ Inizia la partita
+                ▶ {t('Inizia la partita', 'Start the game')}
               </button>
             ) : (
-              <p className="muted">In attesa che l'host avvii la partita…</p>
+              <p className="muted">{t('In attesa che l’host avvii la partita…', 'Waiting for the host to start the game…')}</p>
             )}
-            {isHost && room.seats.length < 2 && <small className="muted">Servono almeno 2 giocatori: invita un amico o aggiungi un bot.</small>}
+            {isHost && room.seats.length < 2 && <small className="muted">{t('Servono almeno 2 giocatori: invita un amico o aggiungi un bot.', 'At least 2 players are needed: invite a friend or add a bot.')}</small>}
           </div>
         </section>
 
         <section className="card">
-          <h2>Regole {isHost ? '' : <small className="muted">(decise dall'host)</small>}</h2>
+          <h2>
+            {t('Regole', 'Rules')} {isHost ? '' : <small className="muted">{t('(decise dall’host)', '(set by the host)')}</small>}
+          </h2>
           <div className="board-choice">
             <label className="field grow">
-              <span>Tabellone</span>
+              <span>{t('Tabellone', 'Board')}</span>
               {isHost ? (
                 <select value={room.theme?.id ?? ''} onChange={(e) => call('room:theme', getBoard(e.target.value))}>
-                  <option value="">Classico Metropoly</option>
+                  <option value="">{t('Classico Metropoly', 'Classic Metropoly')}</option>
                   {room.theme && !myBoards.some((b) => b.id === room.theme!.id) && <option value={room.theme.id}>🎨 {room.theme.title}</option>}
                   {myBoards.map((b) => (
                     <option key={b.id} value={b.id}>
@@ -172,11 +180,11 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
                   ))}
                 </select>
               ) : (
-                <b>{room.theme ? `🎨 ${room.theme.title}` : 'Classico Metropoly'}</b>
+                <b>{room.theme ? `🎨 ${room.theme.title}` : t('Classico Metropoly', 'Classic Metropoly')}</b>
               )}
             </label>
             <button className="btn small" onClick={() => setShowBoard(!showBoard)}>
-              {showBoard ? 'Nascondi' : '👁️ Anteprima'}
+              {showBoard ? t('Nascondi', 'Hide') : `👁️ ${t('Anteprima', 'Preview')}`}
             </button>
           </div>
           {showBoard && (

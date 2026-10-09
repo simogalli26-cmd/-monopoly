@@ -97,6 +97,7 @@ export interface Debt {
   to: string | null;
   amount: number;
   reason: string;
+  reasonEn?: string;
   toPot: boolean;
   createdAt: number;
 }
@@ -132,6 +133,8 @@ export type LogKind = 'info' | 'money' | 'card' | 'jail' | 'trade' | 'buy' | 'bu
 export interface LogEntry {
   id: number;
   text: string;
+  /** English version of the message. */
+  en?: string;
   kind: LogKind;
 }
 

@@ -12,7 +12,7 @@ import {
   unmortgageCost,
   type Card,
 } from './board';
-import { DECK_NAMES, cardText, nameOf, type BoardTheme } from './theme';
+import { DECK_NAMES, cardText, deckName, nameOf, type BoardTheme } from './theme';
 import type {
   Action,
   Deck,
@@ -114,12 +114,14 @@ export function liquidationValue(s: GameState, id: string): number {
   }, p.cash);
 }
 
-function log(s: GameState, text: string, kind: LogKind = 'info') {
-  s.log.push({ id: ++s.logSeq, text, kind });
+function log(s: GameState, text: string, kind: LogKind = 'info', en?: string) {
+  s.log.push({ id: ++s.logSeq, text, en, kind });
   if (s.log.length > MAX_LOG) s.log.splice(0, s.log.length - MAX_LOG);
 }
 
 const money = (n: number) => `$${n}`;
+/** English name of a space (custom boards keep their own texts). */
+const en = (s: GameState, i: number) => nameOf(s.theme, i, 'en');
 
 function setPhase(s: GameState, phase: Phase, now: number) {
   s.phase = phase;
@@ -177,8 +179,8 @@ export function createGame(opts: {
   }));
   s.decks.chance = shuffle(s, CHANCE_CARDS.map((_, i) => i));
   s.decks.chest = shuffle(s, CHEST_CARDS.map((_, i) => i));
-  log(s, 'La partita è iniziata! Buona fortuna a tutti.', 'turn');
-  if (s.players[0]) log(s, `Tocca a ${s.players[0].name}.`, 'turn');
+  log(s, 'La partita è iniziata! Buona fortuna a tutti.', 'turn', 'The game has started! Good luck everyone.');
+  if (s.players[0]) log(s, `Tocca a ${s.players[0].name}.`, 'turn', `${s.players[0].name}’s turn.`);
   setPhase(s, 'roll', now);
   return s;
 }
@@ -203,6 +205,7 @@ function charge(
   reason: string,
   now: number,
   toPot = false,
+  reasonEn = reason,
 ): boolean {
   if (amount <= 0) return true;
   const from = getPlayer(s, fromId)!;
@@ -211,8 +214,13 @@ function charge(
     credit(s, to, amount, toPot);
     return true;
   }
-  s.debts.push({ from: fromId, to, amount, reason, toPot, createdAt: now });
-  log(s, `${from.name} non ha abbastanza contanti per pagare ${money(amount)} (${reason}): deve ipotecare, vendere o dichiarare bancarotta.`, 'danger');
+  s.debts.push({ from: fromId, to, amount, reason, reasonEn, toPot, createdAt: now });
+  log(
+    s,
+    `${from.name} non ha abbastanza contanti per pagare ${money(amount)} (${reason}): deve ipotecare, vendere o dichiarare bancarotta.`,
+    'danger',
+    `${from.name} can’t pay ${money(amount)} (${reasonEn}): they must mortgage, sell or go bankrupt.`,
+  );
   return false;
 }
 
@@ -224,7 +232,7 @@ function sendToJail(s: GameState, p: Player) {
   p.jailTurns = 0;
   p.doubles = 0;
   if (activePlayer(s).id === p.id) s.rolledDoubles = false;
-  log(s, `${p.name} finisce in prigione!`, 'jail');
+  log(s, `${p.name} finisce in prigione!`, 'jail', `${p.name} goes to jail!`);
 }
 
 function moveForward(s: GameState, p: Player, steps: number) {
@@ -238,7 +246,7 @@ function moveTo(s: GameState, p: Player, target: number) {
     const double = target === 0 && s.settings.doubleGoOnLanding;
     const salary = double ? GO_SALARY * 2 : GO_SALARY;
     p.cash += salary;
-    log(s, `${p.name} ${target === 0 ? 'si ferma sulla' : 'passa dalla'} Partenza e ritira ${money(salary)}.`, 'money');
+    log(s, `${p.name} ${target === 0 ? 'si ferma sulla' : 'passa dalla'} Partenza e ritira ${money(salary)}.`, 'money', `${p.name} ${target === 0 ? 'lands on' : 'passes'} Start and collects ${money(salary)}.`);
   }
   p.position = target;
 }
@@ -263,23 +271,23 @@ function landOn(s: GameState, p: Player, now: number, mods: LandMods = {}) {
       if (own.owner === p.id) return;
       const owner = getPlayer(s, own.owner)!;
       if (own.mortgaged) {
-        log(s, `${nameOf(s.theme, p.position)} è ipotecata: nessun affitto.`);
+        log(s, `${nameOf(s.theme, p.position)} è ipotecata: nessun affitto.`, 'info', `${en(s, p.position)} is mortgaged: no rent.`);
         return;
       }
       if (owner.inJail && s.settings.noRentInJail) {
-        log(s, `${owner.name} è in prigione e non riscuote l'affitto di ${nameOf(s.theme, p.position)}.`);
+        log(s, `${owner.name} è in prigione e non riscuote l'affitto di ${nameOf(s.theme, p.position)}.`, 'info', `${owner.name} is in jail and collects no rent for ${en(s, p.position)}.`);
         return;
       }
       let rent = rentFor(s, p.position, diceTotal);
       if (space.type === 'airport' && mods.airportMultiplier) rent *= mods.airportMultiplier;
       if (space.type === 'utility' && mods.utilityTenX) rent = diceTotal * 10;
-      log(s, `${p.name} paga ${money(rent)} di affitto a ${owner.name} per ${nameOf(s.theme, p.position)}.`, 'money');
-      charge(s, p.id, owner.id, rent, `affitto ${nameOf(s.theme, p.position)}`, now);
+      log(s, `${p.name} paga ${money(rent)} di affitto a ${owner.name} per ${nameOf(s.theme, p.position)}.`, 'money', `${p.name} pays ${money(rent)} rent to ${owner.name} for ${en(s, p.position)}.`);
+      charge(s, p.id, owner.id, rent, `affitto ${nameOf(s.theme, p.position)}`, now, false, `rent for ${en(s, p.position)}`);
       return;
     }
     case 'tax':
-      log(s, `${p.name} paga ${money(space.tax!)} di ${space.name.toLowerCase()}.`, 'money');
-      charge(s, p.id, null, space.tax!, space.name, now, true);
+      log(s, `${p.name} paga ${money(space.tax!)} di ${space.name.toLowerCase()}.`, 'money', `${p.name} pays ${money(space.tax!)} ${en(s, p.position).toLowerCase()}.`);
+      charge(s, p.id, null, space.tax!, space.name, now, true, en(s, p.position));
       return;
     case 'chance':
     case 'chest':
@@ -290,7 +298,7 @@ function landOn(s: GameState, p: Player, now: number, mods: LandMods = {}) {
       return;
     case 'parking':
       if (s.settings.freeParkingPot && s.pot > 0) {
-        log(s, `${p.name} vince il montepremi del parcheggio: ${money(s.pot)}!`, 'money');
+        log(s, `${p.name} vince il montepremi dell’Area Relax: ${money(s.pot)}!`, 'money', `${p.name} wins the Chill Zone jackpot: ${money(s.pot)}!`);
         p.cash += s.pot;
         s.pot = 0;
       }
@@ -305,7 +313,7 @@ function drawCard(s: GameState, p: Player, deck: Deck, now: number) {
   const cardIdx = pile.shift()!;
   const card = cardsOf(deck)[cardIdx];
   s.lastCard = { seq: (s.lastCard?.seq ?? 0) + 1, deck, card: cardIdx, playerId: p.id };
-  log(s, `${p.name} pesca ${DECK_NAMES[deck]}: “${cardText(s.theme, card.text)}”`, 'card');
+  log(s, `${p.name} pesca ${DECK_NAMES[deck]}: “${cardText(s.theme, card.text)}”`, 'card', `${p.name} draws ${deckName(deck, 'en')}: “${cardText(s.theme, card.en, 'en')}”`);
   const e = card.effect;
   if (e.kind !== 'jailFree') pile.push(cardIdx);
   switch (e.kind) {
@@ -327,13 +335,13 @@ function drawCard(s: GameState, p: Player, deck: Deck, now: number) {
       return;
     case 'cash':
       if (e.amount >= 0) p.cash += e.amount;
-      else charge(s, p.id, null, -e.amount, 'carta', now, true);
+      else charge(s, p.id, null, -e.amount, 'carta', now, true, 'card');
       return;
     case 'eachPlayer':
       for (const other of alivePlayers(s)) {
         if (other.id === p.id) continue;
-        if (e.amount < 0) charge(s, p.id, other.id, -e.amount, `carta (a ${other.name})`, now);
-        else charge(s, other.id, p.id, e.amount, `regalo a ${p.name}`, now);
+        if (e.amount < 0) charge(s, p.id, other.id, -e.amount, `carta (a ${other.name})`, now, false, `card (to ${other.name})`);
+        else charge(s, other.id, p.id, e.amount, `regalo a ${p.name}`, now, false, `gift to ${p.name}`);
       }
       return;
     case 'repairs': {
@@ -343,8 +351,8 @@ function drawCard(s: GameState, p: Player, deck: Deck, now: number) {
         total += h === 5 ? e.hotel : h * e.house;
       }
       if (total > 0) {
-        log(s, `${p.name} paga ${money(total)} di manutenzione.`, 'money');
-        charge(s, p.id, null, total, 'manutenzione', now, true);
+        log(s, `${p.name} paga ${money(total)} di manutenzione.`, 'money', `${p.name} pays ${money(total)} for repairs.`);
+        charge(s, p.id, null, total, 'manutenzione', now, true, 'repairs');
       }
       return;
     }
@@ -364,7 +372,7 @@ function afterLanding(s: GameState, now: number) {
   if (p.bankrupt) return;
   if (s.rolledDoubles && !p.inJail) {
     setPhase(s, 'roll', now);
-    log(s, `${p.name} ha fatto doppio: tira di nuovo!`, 'turn');
+    log(s, `${p.name} ha fatto doppio: tira di nuovo!`, 'turn', `${p.name} rolled a double: roll again!`);
   } else {
     setPhase(s, 'end', now);
   }
@@ -383,7 +391,7 @@ function nextTurn(s: GameState, now: number) {
   s.rolledDoubles = false;
   const p = s.players[i];
   p.doubles = 0;
-  log(s, `Tocca a ${p.name}.`, 'turn');
+  log(s, `Tocca a ${p.name}.`, 'turn', `${p.name}’s turn.`);
   setPhase(s, 'roll', now);
 }
 
@@ -394,7 +402,7 @@ function checkWinner(s: GameState, now: number) {
     s.auction = null;
     s.trades = [];
     setPhase(s, 'over', now);
-    if (alive[0]) log(s, `🏆 ${alive[0].name} vince la partita!`, 'turn');
+    if (alive[0]) log(s, `🏆 ${alive[0].name} vince la partita!`, 'turn', `🏆 ${alive[0].name} wins the game!`);
   }
 }
 
@@ -501,12 +509,12 @@ function declareBankruptcy(s: GameState, p: Player, now: number) {
     creditor.cash += Math.max(0, p.cash);
     for (const i of propertiesOf(s, p.id)) s.ownership[i].owner = creditor.id;
     transferCards(p, creditor, p.jailCards.length);
-    log(s, `💥 ${p.name} dichiara bancarotta! Tutti i suoi beni passano a ${creditor.name}.`, 'danger');
+    log(s, `💥 ${p.name} dichiara bancarotta! Tutti i suoi beni passano a ${creditor.name}.`, 'danger', `💥 ${p.name} goes bankrupt! All their assets go to ${creditor.name}.`);
   } else {
     for (const i of propertiesOf(s, p.id)) s.ownership[i] = { owner: null, houses: 0, mortgaged: false };
     for (const deck of p.jailCards) s.decks[deck].push(cardsOf(deck).findIndex((c) => c.effect.kind === 'jailFree'));
     p.jailCards = [];
-    log(s, `💥 ${p.name} dichiara bancarotta! Le sue proprietà tornano alla banca.`, 'danger');
+    log(s, `💥 ${p.name} dichiara bancarotta! Le sue proprietà tornano alla banca.`, 'danger', `💥 ${p.name} goes bankrupt! Their properties return to the bank.`);
   }
 
   p.cash = 0;
@@ -532,7 +540,7 @@ function startAuction(s: GameState, space: number, now: number) {
   s.auction = { space, highBid: 0, highBidder: null, endsAt: now + s.settings.auctionTime * 1000 + 2000 };
   setPhase(s, 'auction', now);
   s.turnDeadline = null;
-  log(s, `🔨 Asta per ${nameOf(s.theme, space)}!`, 'buy');
+  log(s, `🔨 Asta per ${nameOf(s.theme, space)}!`, 'buy', `🔨 Auction for ${en(s, space)}!`);
 }
 
 function closeAuction(s: GameState, now: number) {
@@ -542,9 +550,9 @@ function closeAuction(s: GameState, now: number) {
   if (winner && !winner.bankrupt && winner.cash >= a.highBid) {
     winner.cash -= a.highBid;
     s.ownership[a.space].owner = winner.id;
-    log(s, `${winner.name} si aggiudica ${nameOf(s.theme, a.space)} per ${money(a.highBid)}.`, 'buy');
+    log(s, `${winner.name} si aggiudica ${nameOf(s.theme, a.space)} per ${money(a.highBid)}.`, 'buy', `${winner.name} wins ${en(s, a.space)} for ${money(a.highBid)}.`);
   } else {
-    log(s, `Nessuna offerta: ${nameOf(s.theme, a.space)} resta alla banca.`);
+    log(s, `Nessuna offerta: ${nameOf(s.theme, a.space)} resta alla banca.`, 'info', `No bids: ${en(s, a.space)} stays with the bank.`);
   }
   if (activePlayer(s).bankrupt) nextTurn(s, now);
   else afterLanding(s, now);
@@ -582,30 +590,30 @@ function doRoll(s: GameState, p: Player, now: number) {
   s.rollSeq++;
   const total = dice[0] + dice[1];
   const isDouble = dice[0] === dice[1];
-  log(s, `${p.name} tira ${dice[0]} + ${dice[1]} = ${total}${isDouble ? ' (doppio!)' : ''}.`);
+  log(s, `${p.name} tira ${dice[0]} + ${dice[1]} = ${total}${isDouble ? ' (doppio!)' : ''}.`, 'info', `${p.name} rolls ${dice[0]} + ${dice[1]} = ${total}${isDouble ? ' (double!)' : ''}.`);
 
   if (p.inJail) {
     if (isDouble) {
       p.inJail = false;
       p.jailTurns = 0;
       s.rolledDoubles = false;
-      log(s, `${p.name} esce di prigione con un doppio!`, 'jail');
+      log(s, `${p.name} esce di prigione con un doppio!`, 'jail', `${p.name} gets out of jail with a double!`);
     } else {
       p.jailTurns++;
       if (p.jailTurns < 3) {
-        log(s, `${p.name} resta in prigione (tentativo ${p.jailTurns}/3).`, 'jail');
+        log(s, `${p.name} resta in prigione (tentativo ${p.jailTurns}/3).`, 'jail', `${p.name} stays in jail (attempt ${p.jailTurns}/3).`);
         setPhase(s, 'end', now);
         return;
       }
       p.inJail = false;
       p.jailTurns = 0;
-      log(s, `${p.name} paga ${money(JAIL_FINE)} dopo il terzo tentativo ed esce di prigione.`, 'jail');
-      charge(s, p.id, null, JAIL_FINE, 'cauzione', now, true);
+      log(s, `${p.name} paga ${money(JAIL_FINE)} dopo il terzo tentativo ed esce di prigione.`, 'jail', `${p.name} pays ${money(JAIL_FINE)} after the third attempt and leaves jail.`);
+      charge(s, p.id, null, JAIL_FINE, 'cauzione', now, true, 'bail');
     }
   } else if (isDouble) {
     p.doubles++;
     if (p.doubles >= 3) {
-      log(s, `Tre doppi di fila: eccesso di velocità!`, 'jail');
+      log(s, `Tre doppi di fila: eccesso di velocità!`, 'jail', 'Three doubles in a row: speeding!');
       sendToJail(s, p);
       setPhase(s, 'end', now);
       return;
@@ -648,7 +656,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       credit(s, null, JAIL_FINE, true);
       p.inJail = false;
       p.jailTurns = 0;
-      log(s, `${p.name} paga la cauzione di ${money(JAIL_FINE)}.`, 'jail');
+      log(s, `${p.name} paga la cauzione di ${money(JAIL_FINE)}.`, 'jail', `${p.name} pays ${money(JAIL_FINE)} bail.`);
       return;
 
     case 'useJailCard': {
@@ -658,7 +666,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       s.decks[deck].push(cardsOf(deck).findIndex((c) => c.effect.kind === 'jailFree'));
       p.inJail = false;
       p.jailTurns = 0;
-      log(s, `${p.name} usa la carta “Esci gratis di prigione”.`, 'jail');
+      log(s, `${p.name} usa la carta “Esci gratis di prigione”.`, 'jail', `${p.name} uses a “Get out of jail free” card.`);
       return;
     }
 
@@ -668,7 +676,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       if (p.cash < sp.price!) fail('Contanti insufficienti');
       p.cash -= sp.price!;
       s.ownership[p.position].owner = p.id;
-      log(s, `${p.name} compra ${nameOf(s.theme, p.position)} per ${money(sp.price!)}.`, 'buy');
+      log(s, `${p.name} compra ${nameOf(s.theme, p.position)} per ${money(sp.price!)}.`, 'buy', `${p.name} buys ${en(s, p.position)} for ${money(sp.price!)}.`);
       afterLanding(s, now);
       return;
     }
@@ -677,7 +685,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       requireTurn(s, p, 'buy');
       if (s.settings.auctions) startAuction(s, p.position, now);
       else {
-        log(s, `${p.name} non compra ${nameOf(s.theme, p.position)}.`);
+        log(s, `${p.name} non compra ${nameOf(s.theme, p.position)}.`, 'info', `${p.name} doesn’t buy ${en(s, p.position)}.`);
         afterLanding(s, now);
       }
       return;
@@ -691,7 +699,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       s.auction!.highBid = amount;
       s.auction!.highBidder = p.id;
       s.auction!.endsAt = Math.max(s.auction!.endsAt, now + Math.max(AUCTION_MIN_EXTEND_MS, s.settings.auctionTime * 1000));
-      log(s, `${p.name} offre ${money(amount)}.`, 'buy');
+      log(s, `${p.name} offre ${money(amount)}.`, 'buy', `${p.name} bids ${money(amount)}.`);
       return;
     }
 
@@ -702,7 +710,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       p.cash -= sp.houseCost!;
       const own = s.ownership[action.space];
       own.houses++;
-      log(s, `${p.name} costruisce ${own.houses === 5 ? 'un albergo' : 'una casa'} a ${nameOf(s.theme, action.space)}.`, 'build');
+      log(s, `${p.name} costruisce ${own.houses === 5 ? 'un albergo' : 'una casa'} a ${nameOf(s.theme, action.space)}.`, 'build', `${p.name} builds ${own.houses === 5 ? 'a hotel' : 'a house'} on ${en(s, action.space)}.`);
       pruneTrades(s);
       return;
     }
@@ -714,7 +722,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       const own = s.ownership[action.space];
       own.houses--;
       p.cash += Math.floor(sp.houseCost! / 2);
-      log(s, `${p.name} vende un edificio a ${nameOf(s.theme, action.space)}.`, 'build');
+      log(s, `${p.name} vende un edificio a ${nameOf(s.theme, action.space)}.`, 'build', `${p.name} sells a building on ${en(s, action.space)}.`);
       return;
     }
 
@@ -723,7 +731,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       if (err) fail(err);
       s.ownership[action.space].mortgaged = true;
       p.cash += mortgageValue(action.space);
-      log(s, `${p.name} ipoteca ${nameOf(s.theme, action.space)} (+${money(mortgageValue(action.space))}).`, 'money');
+      log(s, `${p.name} ipoteca ${nameOf(s.theme, action.space)} (+${money(mortgageValue(action.space))}).`, 'money', `${p.name} mortgages ${en(s, action.space)} (+${money(mortgageValue(action.space))}).`);
       return;
     }
 
@@ -732,7 +740,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       if (err) fail(err);
       s.ownership[action.space].mortgaged = false;
       p.cash -= unmortgageCost(action.space);
-      log(s, `${p.name} riscatta ${nameOf(s.theme, action.space)}.`, 'money');
+      log(s, `${p.name} riscatta ${nameOf(s.theme, action.space)}.`, 'money', `${p.name} unmortgages ${en(s, action.space)}.`);
       return;
     }
 
@@ -745,7 +753,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
         p.cash -= d.amount;
         credit(s, d.to, d.amount, d.toPot);
         s.debts.splice(s.debts.indexOf(d), 1);
-        log(s, `${p.name} salda un debito di ${money(d.amount)} (${d.reason}).`, 'money');
+        log(s, `${p.name} salda un debito di ${money(d.amount)} (${d.reason}).`, 'money', `${p.name} pays a debt of ${money(d.amount)} (${d.reasonEn ?? d.reason}).`);
       }
       return;
     }
@@ -776,7 +784,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
         fail('Hai già troppe proposte in sospeso');
       const offer: TradeOffer = { ...draft, id: `t${s.version}-${Math.floor(rand(s) * 1e6)}`, from: p.id, createdAt: now };
       s.trades.push(offer);
-      log(s, `${p.name} propone uno scambio a ${getPlayer(s, draft.to)!.name}.`, 'trade');
+      log(s, `${p.name} propone uno scambio a ${getPlayer(s, draft.to)!.name}.`, 'trade', `${p.name} offers a trade to ${getPlayer(s, draft.to)!.name}.`);
       return;
     }
 
@@ -798,7 +806,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       transferCards(b, a, t.getCards);
       s.trades = s.trades.filter((x) => x.id !== t.id);
       pruneTrades(s);
-      log(s, `🤝 ${b.name} accetta lo scambio con ${a.name}.`, 'trade');
+      log(s, `🤝 ${b.name} accetta lo scambio con ${a.name}.`, 'trade', `🤝 ${b.name} accepts the trade with ${a.name}.`);
       return;
     }
 
@@ -806,7 +814,7 @@ function reduce(s: GameState, p: Player, action: Action, now: number) {
       const t = s.trades.find((x) => x.id === action.id) ?? fail('Proposta non trovata');
       if (t.to !== p.id) fail('Questa proposta non è per te');
       s.trades = s.trades.filter((x) => x.id !== t.id);
-      log(s, `${p.name} rifiuta lo scambio di ${getPlayer(s, t.from)!.name}.`, 'trade');
+      log(s, `${p.name} rifiuta lo scambio di ${getPlayer(s, t.from)!.name}.`, 'trade', `${p.name} rejects ${getPlayer(s, t.from)!.name}’s trade.`);
       return;
     }
 

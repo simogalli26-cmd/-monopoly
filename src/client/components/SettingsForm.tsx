@@ -1,3 +1,4 @@
+import { useT } from '../i18n';
 import type { Settings } from '../../shared/types';
 
 interface Props {
@@ -6,17 +7,46 @@ interface Props {
   compact?: boolean;
 }
 
-const TOGGLES: { key: keyof Settings; label: string; hint: string }[] = [
-  { key: 'doubleRentOnSet', label: 'Affitto doppio sul gruppo completo', hint: 'Terreni senza case di un gruppo completo rendono il doppio.' },
-  { key: 'auctions', label: 'Aste', hint: 'Se chi ci capita non compra, la proprietà va all’asta tra tutti.' },
-  { key: 'freeParkingPot', label: 'Montepremi all’Area Relax', hint: 'Tasse e multe finiscono nel piatto: chi si ferma all’Area Relax lo vince.' },
-  { key: 'doubleGoOnLanding', label: 'Partenza doppia', hint: 'Fermarsi esattamente sulla Partenza paga 400.' },
-  { key: 'noRentInJail', label: 'Niente affitti in prigione', hint: 'Chi è in prigione non riscuote gli affitti.' },
-  { key: 'evenBuild', label: 'Costruzione uniforme', hint: 'Le case vanno distribuite in modo uniforme nel gruppo.' },
-  { key: 'randomOrder', label: 'Ordine casuale', hint: 'Mescola l’ordine dei giocatori all’inizio.' },
+const TOGGLES: { key: keyof Settings; label: [string, string]; hint: [string, string] }[] = [
+  {
+    key: 'doubleRentOnSet',
+    label: ['Affitto doppio sul gruppo completo', 'Double rent on full sets'],
+    hint: ['Terreni senza case di un gruppo completo rendono il doppio.', 'Unimproved properties of a full set earn double rent.'],
+  },
+  {
+    key: 'auctions',
+    label: ['Aste', 'Auctions'],
+    hint: ['Se chi ci capita non compra, la proprietà va all’asta tra tutti.', 'If the player who lands there doesn’t buy, everyone bids for it.'],
+  },
+  {
+    key: 'freeParkingPot',
+    label: ['Montepremi all’Area Relax', 'Chill Zone jackpot'],
+    hint: ['Tasse e multe finiscono nel piatto: chi si ferma all’Area Relax lo vince.', 'Taxes and fines go into a pot won by landing on the Chill Zone.'],
+  },
+  {
+    key: 'doubleGoOnLanding',
+    label: ['Partenza doppia', 'Double Start'],
+    hint: ['Fermarsi esattamente sulla Partenza paga 400.', 'Landing exactly on Start pays 400.'],
+  },
+  {
+    key: 'noRentInJail',
+    label: ['Niente affitti in prigione', 'No rent in jail'],
+    hint: ['Chi è in prigione non riscuote gli affitti.', 'Players in jail don’t collect rent.'],
+  },
+  {
+    key: 'evenBuild',
+    label: ['Costruzione uniforme', 'Even building'],
+    hint: ['Le case vanno distribuite in modo uniforme nel gruppo.', 'Houses must be spread evenly across the set.'],
+  },
+  {
+    key: 'randomOrder',
+    label: ['Ordine casuale', 'Random order'],
+    hint: ['Mescola l’ordine dei giocatori all’inizio.', 'Shuffle the player order at the start.'],
+  },
 ];
 
 export function SettingsForm({ value, onChange, compact }: Props) {
+  const t = useT();
   const readOnly = !onChange;
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => onChange?.({ ...value, [k]: v });
 
@@ -24,7 +54,7 @@ export function SettingsForm({ value, onChange, compact }: Props) {
     <div className={`settings ${compact ? 'compact' : ''}`}>
       <div className="settings-grid">
         <label className="field">
-          <span>Soldi iniziali</span>
+          <span>{t('Soldi iniziali', 'Starting cash')}</span>
           <select disabled={readOnly} value={value.startingCash} onChange={(e) => set('startingCash', +e.target.value)}>
             {[1000, 1500, 2000, 2500, 3000].map((n) => (
               <option key={n} value={n}>
@@ -34,7 +64,7 @@ export function SettingsForm({ value, onChange, compact }: Props) {
           </select>
         </label>
         <label className="field">
-          <span>Giocatori max</span>
+          <span>{t('Giocatori max', 'Max players')}</span>
           <select disabled={readOnly} value={value.maxPlayers} onChange={(e) => set('maxPlayers', +e.target.value)}>
             {[2, 3, 4, 5, 6, 7, 8].map((n) => (
               <option key={n} value={n}>
@@ -44,17 +74,17 @@ export function SettingsForm({ value, onChange, compact }: Props) {
           </select>
         </label>
         <label className="field">
-          <span>Tempo per mossa</span>
+          <span>{t('Tempo per mossa', 'Time per move')}</span>
           <select disabled={readOnly} value={value.turnTime} onChange={(e) => set('turnTime', +e.target.value)}>
             {[0, 30, 45, 60, 90, 120].map((n) => (
               <option key={n} value={n}>
-                {n === 0 ? 'Illimitato' : `${n} s`}
+                {n === 0 ? t('Illimitato', 'Unlimited') : `${n} s`}
               </option>
             ))}
           </select>
         </label>
         <label className="field">
-          <span>Durata asta</span>
+          <span>{t('Durata asta', 'Auction time')}</span>
           <select disabled={readOnly} value={value.auctionTime} onChange={(e) => set('auctionTime', +e.target.value)}>
             {[5, 8, 12, 15].map((n) => (
               <option key={n} value={n}>
@@ -65,18 +95,18 @@ export function SettingsForm({ value, onChange, compact }: Props) {
         </label>
       </div>
       <div className="toggles">
-        {TOGGLES.map((t) => (
-          <label key={t.key} className={`toggle ${readOnly ? 'readonly' : ''}`} title={t.hint}>
+        {TOGGLES.map((tg) => (
+          <label key={tg.key} className={`toggle ${readOnly ? 'readonly' : ''}`} title={t(...tg.hint)}>
             <input
               type="checkbox"
               disabled={readOnly}
-              checked={!!value[t.key]}
-              onChange={(e) => set(t.key, e.target.checked as never)}
+              checked={!!value[tg.key]}
+              onChange={(e) => set(tg.key, e.target.checked as never)}
             />
             <span className="switch" aria-hidden />
             <span className="toggle-text">
-              <b>{t.label}</b>
-              {!compact && <small>{t.hint}</small>}
+              <b>{t(...tg.label)}</b>
+              {!compact && <small>{t(...tg.hint)}</small>}
             </span>
           </label>
         ))}

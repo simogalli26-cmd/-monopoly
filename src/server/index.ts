@@ -117,8 +117,8 @@ function broadcastRoom(r: Room) {
   broadcastLobby();
 }
 
-function systemChat(r: Room, text: string) {
-  const msg: ChatMessage = { id: ++r.chatSeq, from: 'system', name: '', color: '', text, at: Date.now(), system: true };
+function systemChat(r: Room, text: string, en?: string) {
+  const msg: ChatMessage = { id: ++r.chatSeq, from: 'system', name: '', color: '', text, en, at: Date.now(), system: true };
   r.chat.push(msg);
   if (r.chat.length > 100) r.chat.shift();
   io.to(`room:${r.id}`).emit('chat:msg', msg);
@@ -182,7 +182,7 @@ io.on('connection', (socket: Socket) => {
       const t = r.disconnectTimers.get(clientId);
       if (t) clearTimeout(t);
       r.disconnectTimers.delete(clientId);
-      if (r.runner?.autopilot.delete(clientId)) systemChat(r, `${seat.name} è tornato in partita.`);
+      if (r.runner?.autopilot.delete(clientId)) systemChat(r, `${seat.name} è tornato in partita.`, `${seat.name} is back in the game.`);
     }
     socket.emit('room:update', view(r));
     socket.emit('chat:history', r.chat);
@@ -199,14 +199,14 @@ io.on('connection', (socket: Socket) => {
     if (!seat) return;
     if (r.status === 'waiting') {
       r.seats = r.seats.filter((s) => s.id !== clientId);
-      systemChat(r, `${seat.name} ha lasciato la stanza.`);
+      systemChat(r, `${seat.name} ha lasciato la stanza.`, `${seat.name} left the room.`);
       if (!r.seats.some((s) => !s.isBot)) return deleteRoom(r);
       if (r.hostId === clientId) r.hostId = r.seats.find((s) => !s.isBot)!.id;
     } else if (explicit && r.runner) {
       const p = r.runner.state.players.find((x) => x.id === clientId);
       if (p && !p.bankrupt && r.runner.state.phase !== 'over') {
         r.runner.dispatch(clientId, { type: 'bankrupt' });
-        systemChat(r, `${seat.name} ha abbandonato la partita.`);
+        systemChat(r, `${seat.name} ha abbandonato la partita.`, `${seat.name} quit the game.`);
       }
       seat.connected = false;
     } else {
@@ -224,7 +224,7 @@ io.on('connection', (socket: Socket) => {
       setTimeout(() => {
         if (seat.connected || !r.runner) return;
         r.runner.autopilot.add(id);
-        systemChat(r, `${seat.name} è disconnesso: il computer gioca al suo posto.`);
+        systemChat(r, `${seat.name} è disconnesso: il computer gioca al suo posto.`, `${seat.name} disconnected: the computer plays for them.`);
       }, AUTOPILOT_AFTER_MS),
     );
   }
@@ -235,7 +235,7 @@ io.on('connection', (socket: Socket) => {
     const profile = sanitizeProfile(payload?.profile);
     const r: Room = {
       id,
-      name: clean(payload?.name, 32) || `Stanza di ${profile.name}`,
+      name: clean(payload?.name, 32) || `${profile.name}’s room`,
       hostId: clientId,
       isPrivate: !!payload?.isPrivate,
       settings: sanitizeSettings(payload?.settings),
@@ -250,7 +250,7 @@ io.on('connection', (socket: Socket) => {
     };
     rooms.set(id, r);
     enterRoom(r);
-    systemChat(r, `${profile.name} ha creato la stanza.`);
+    systemChat(r, `${profile.name} ha creato la stanza.`, `${profile.name} created the room.`);
     broadcastLobby();
     reply(ack, { ok: true, data: id });
   });
@@ -268,7 +268,7 @@ io.on('connection', (socket: Socket) => {
       if (r.seats.length >= r.settings.maxPlayers) return reply(ack, { ok: false, error: 'La stanza è piena' });
       const profile = sanitizeProfile(payload?.profile, r, clientId);
       r.seats.push({ id: clientId, ...profile, isBot: false, connected: true });
-      systemChat(r, `${profile.name} è entrato nella stanza.`);
+      systemChat(r, `${profile.name} è entrato nella stanza.`, `${profile.name} joined the room.`);
     }
     enterRoom(r);
     broadcastRoom(r);
@@ -320,7 +320,7 @@ io.on('connection', (socket: Socket) => {
     const name = `🤖 ${BOT_NAMES.find((n) => !usedNames.has(`🤖 ${n}`)) ?? 'Bot'}`;
     const profile = sanitizeProfile({ name, color: '', token: '' }, r, '');
     r.seats.push({ id: `bot-${newId()}`, ...profile, name, isBot: true, botLevel: level, connected: true });
-    systemChat(r, `Aggiunto ${name} (${BOT_LEVEL_LABEL[level]}).`);
+    systemChat(r, `Aggiunto ${name} (${BOT_LEVEL_LABEL[level]}).`, `Added ${name} (${level}).`);
     broadcastRoom(r);
     reply(ack, { ok: true });
   });
@@ -332,7 +332,7 @@ io.on('connection', (socket: Socket) => {
     if (!seat) return reply(ack, { ok: false });
     r.seats = r.seats.filter((s) => s !== seat);
     if (!seat.isBot) io.to(`room:${r.id}`).emit('room:kicked', seat.id);
-    systemChat(r, `${seat.name} è stato rimosso.`);
+    systemChat(r, `${seat.name} è stato rimosso.`, `${seat.name} was removed.`);
     broadcastRoom(r);
     reply(ack, { ok: true });
   });
@@ -355,7 +355,7 @@ io.on('connection', (socket: Socket) => {
     for (const seat of r.seats) if (!seat.isBot && !seat.connected) markDisconnected(r, seat);
     r.runner.start();
     io.to(`room:${r.id}`).emit('game:state', state);
-    systemChat(r, 'La partita è iniziata!');
+    systemChat(r, 'La partita è iniziata!', 'The game has started!');
     broadcastRoom(r);
     reply(ack, { ok: true });
   });
@@ -368,7 +368,7 @@ io.on('connection', (socket: Socket) => {
     r.status = 'waiting';
     r.seats = r.seats.filter((s) => s.isBot || s.connected);
     io.to(`room:${r.id}`).emit('game:state', null);
-    systemChat(r, 'Nuova partita: tornate in sala d’attesa!');
+    systemChat(r, 'Nuova partita: tornate in sala d’attesa!', 'New game: back to the waiting room!');
     broadcastRoom(r);
     reply(ack, { ok: true });
   });

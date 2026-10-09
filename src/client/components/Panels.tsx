@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { DECK_ICONS, DECK_NAMES, cardText, shortOf, spaceOf } from '../../shared/theme';
+import { DECK_ICONS, cardText, deckName, shortOf, spaceOf } from '../../shared/theme';
+import type { Lang } from '../../shared/i18n';
 import { BOARD, GROUP_COLORS, GROUP_MEMBERS, JAIL_FINE } from '../../shared/board';
 import { activePlayer, cardsOf, debtsOf, getPlayer, liquidationValue, netWorth, propertiesOf, totalDebt } from '../../shared/engine';
 import type { Action, ColorGroup, DrawnCard, GameState, LogEntry, Player, TradeOffer } from '../../shared/types';
 import { Modal } from './Modal';
+import { logText, useLang, useT } from '../i18n';
 
 const COLOR_GROUPS: ColorGroup[] = ['brown', 'lightblue', 'pink', 'orange', 'red', 'yellow', 'green', 'darkblue'];
 
@@ -67,6 +69,7 @@ export function PlayersPanel({
   me: string | null;
   onTrade: (to: string) => void;
 }) {
+  const t = useT();
   const active = activePlayer(state);
   const canTrade = !!me && !getPlayer(state, me)?.bankrupt && state.phase !== 'over';
   return (
@@ -83,28 +86,28 @@ export function PlayersPanel({
             <div className="player-main">
               <div className="player-name">
                 <b>{p.name}</b>
-                {p.id === me && <span className="you">tu</span>}
-                {p.inJail && <span title="In prigione">🔒</span>}
-                {p.jailCards.length > 0 && <span title="Carta esci di prigione">🎫{p.jailCards.length > 1 ? p.jailCards.length : ''}</span>}
+                {p.id === me && <span className="you">{t('tu', 'you')}</span>}
+                {p.inJail && <span title={t('In prigione', 'In jail')}>🔒</span>}
+                {p.jailCards.length > 0 && <span title={t('Carta esci di prigione', 'Get out of jail card')}>🎫{p.jailCards.length > 1 ? p.jailCards.length : ''}</span>}
               </div>
               {p.bankrupt ? (
-                <small className="muted">Bancarotta</small>
+                <small className="muted">{t('Bancarotta', 'Bankrupt')}</small>
               ) : (
                 <>
                   <div className="player-cash">
                     <b>${p.cash}</b>
                     <CashDelta cash={p.cash} />
-                    <small className="muted" title="Patrimonio netto">
+                    <small className="muted" title={t('Patrimonio netto', 'Net worth')}>
                       · ${netWorth(state, p.id)}
                     </small>
                   </div>
-                  {debt > 0 && <small className="debt">Debito ${debt}</small>}
+                  {debt > 0 && <small className="debt">{t('Debito', 'Debt')} ${debt}</small>}
                   <GroupDots state={state} id={p.id} />
                 </>
               )}
             </div>
             {canTrade && p.id !== me && !p.bankrupt && (
-              <button className="icon-btn" title={`Scambia con ${p.name}`} onClick={() => onTrade(p.id)}>
+              <button className="icon-btn" title={t(`Scambia con ${p.name}`, `Trade with ${p.name}`)} onClick={() => onTrade(p.id)}>
                 🤝
               </button>
             )}
@@ -117,15 +120,15 @@ export function PlayersPanel({
 
 // ---------------------------------------------------------------- trades
 
-function describeSide(state: GameState, props: number[], cash: number, cards: number) {
+function describeSide(state: GameState, props: number[], cash: number, cards: number, lang: Lang) {
   const parts = props.map((i) => (
     <span key={i} className="chip" style={{ ['--group' as string]: GROUP_COLORS[BOARD[i].group!] }}>
-      {shortOf(state.theme, i)}
+      {shortOf(state.theme, i, lang)}
     </span>
   ));
   if (cash) parts.push(<span key="c" className="chip cash">${cash}</span>);
   if (cards) parts.push(<span key="j" className="chip">🎫×{cards}</span>);
-  if (!parts.length) parts.push(<span key="n" className="muted small">niente</span>);
+  if (!parts.length) parts.push(<span key="n" className="muted small">{lang === 'en' ? 'nothing' : 'niente'}</span>);
   return parts;
 }
 
@@ -140,11 +143,13 @@ export function TradesPanel({
   act: (a: Action) => void;
   onCounter: (t: TradeOffer) => void;
 }) {
+  const tt = useT();
+  const lang = useLang();
   const trades = state.trades.filter((t) => !me || t.from === me || t.to === me);
   if (!trades.length) return null;
   return (
     <div className="trades">
-      <h4>Scambi</h4>
+      <h4>{tt('Scambi', 'Trades')}</h4>
       {trades.map((t) => {
         const from = getPlayer(state, t.from)!;
         const to = getPlayer(state, t.to)!;
@@ -154,28 +159,28 @@ export function TradesPanel({
               <b style={{ color: from.color }}>{from.name}</b> → <b style={{ color: to.color }}>{to.name}</b>
             </div>
             <div className="trade-line">
-              <small className="muted">dà</small> {describeSide(state, t.giveProps, t.giveCash, t.giveCards)}
+              <small className="muted">{tt('dà', 'gives')}</small> {describeSide(state, t.giveProps, t.giveCash, t.giveCards, lang)}
             </div>
             <div className="trade-line">
-              <small className="muted">chiede</small> {describeSide(state, t.getProps, t.getCash, t.getCards)}
+              <small className="muted">{tt('chiede', 'wants')}</small> {describeSide(state, t.getProps, t.getCash, t.getCards, lang)}
             </div>
             <div className="trade-btns">
               {t.to === me && (
                 <>
                   <button className="btn small primary" onClick={() => act({ type: 'acceptTrade', id: t.id })}>
-                    Accetta
+                    {tt('Accetta', 'Accept')}
                   </button>
                   <button className="btn small" onClick={() => onCounter(t)}>
-                    Controproposta
+                    {tt('Controproposta', 'Counter')}
                   </button>
                   <button className="btn small ghost" onClick={() => act({ type: 'rejectTrade', id: t.id })}>
-                    Rifiuta
+                    {tt('Rifiuta', 'Reject')}
                   </button>
                 </>
               )}
               {t.from === me && (
                 <button className="btn small ghost" onClick={() => act({ type: 'cancelTrade', id: t.id })}>
-                  Ritira
+                  {tt('Ritira', 'Withdraw')}
                 </button>
               )}
             </div>
@@ -189,6 +194,7 @@ export function TradesPanel({
 // ---------------------------------------------------------------- log
 
 export function LogPanel({ log }: { log: LogEntry[] }) {
+  const lang = useLang();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.scrollTo({ top: ref.current.scrollHeight, behavior: 'smooth' });
@@ -197,7 +203,7 @@ export function LogPanel({ log }: { log: LogEntry[] }) {
     <div className="log" ref={ref}>
       {log.map((l) => (
         <div key={l.id} className={`log-entry k-${l.kind}`}>
-          {l.text}
+          {logText(l, lang)}
         </div>
       ))}
     </div>
@@ -207,19 +213,21 @@ export function LogPanel({ log }: { log: LogEntry[] }) {
 // ---------------------------------------------------------------- my properties
 
 export function MyProps({ state, me, onOpen }: { state: GameState; me: string; onOpen: (i: number) => void }) {
+  const t = useT();
+  const lang = useLang();
   const props = propertiesOf(state, me);
-  if (!props.length) return <p className="muted small pad">Non possiedi ancora nessuna proprietà.</p>;
+  if (!props.length) return <p className="muted small pad">{t('Non possiedi ancora nessuna proprietà.', 'You don’t own any property yet.')}</p>;
   return (
     <div className="my-props">
       {props.map((i) => {
-        const sp = spaceOf(state.theme, i);
+        const sp = spaceOf(state.theme, i, lang);
         const own = state.ownership[i];
         return (
           <button key={i} className={`my-prop ${own.mortgaged ? 'mortgaged' : ''}`} style={{ ['--group' as string]: GROUP_COLORS[sp.group!] }} onClick={() => onOpen(i)}>
             <i className="pick-color" />
             <span>{sp.name}</span>
             <small>
-              {own.mortgaged ? 'ipotecata' : own.houses === 5 ? '🏨' : own.houses ? '🏠'.repeat(own.houses) : ''}
+              {own.mortgaged ? t('ipotecata', 'mortgaged') : own.houses === 5 ? '🏨' : own.houses ? '🏠'.repeat(own.houses) : ''}
             </small>
           </button>
         );
@@ -243,12 +251,13 @@ export function TimerBar({ deadline, total, now }: { deadline: number | null; to
 }
 
 export function CardView({ card, state }: { card: DrawnCard; state: GameState }) {
+  const lang = useLang();
   const c = cardsOf(card.deck)[card.card];
   const who = getPlayer(state, card.playerId);
   return (
     <div className={`game-card deck-${card.deck}`}>
-      <small>{DECK_ICONS[card.deck]} {DECK_NAMES[card.deck]}</small>
-      <p>{cardText(state.theme, c.text)}</p>
+      <small>{DECK_ICONS[card.deck]} {deckName(card.deck, lang)}</small>
+      <p>{cardText(state.theme, lang === 'en' ? c.en : c.text, lang)}</p>
       {who && (
         <small className="muted">
           {who.token} {who.name}
@@ -269,8 +278,10 @@ export function AuctionPanel({
   act: (a: Action) => void;
   now: number;
 }) {
+  const t = useT();
+  const lang = useLang();
   const a = state.auction!;
-  const sp = spaceOf(state.theme, a.space);
+  const sp = spaceOf(state.theme, a.space, lang);
   const meP = me ? getPlayer(state, me) : undefined;
   const bidder = getPlayer(state, a.highBidder);
   const [custom, setCustom] = useState('');
@@ -279,15 +290,15 @@ export function AuctionPanel({
   return (
     <div className="auction" style={{ ['--group' as string]: sp.group ? GROUP_COLORS[sp.group] : '#888' }}>
       <div className="auction-head">
-        <small>🔨 ASTA</small>
+        <small>🔨 {t('ASTA', 'AUCTION')}</small>
         <b>
           {sp.icon} {sp.name}
         </b>
-        <small className="muted">valore ${sp.price}</small>
+        <small className="muted">{t('valore', 'value')} ${sp.price}</small>
       </div>
       <div className="auction-bid">
         <span className="big-num">${a.highBid}</span>
-        <span>{bidder ? <b style={{ color: bidder.color }}>{bidder.token} {bidder.name}</b> : <span className="muted">nessuna offerta</span>}</span>
+        <span>{bidder ? <b style={{ color: bidder.color }}>{bidder.token} {bidder.name}</b> : <span className="muted">{t('nessuna offerta', 'no bids')}</span>}</span>
       </div>
       <div className={`timer ${left < 3000 ? 'low' : ''}`}>
         <div style={{ width: `${Math.min(100, (left / (state.settings.auctionTime * 1000)) * 100)}%` }} />
@@ -312,10 +323,10 @@ export function AuctionPanel({
           >
             <input type="number" placeholder={`> ${a.highBid}`} value={custom} onChange={(e) => setCustom(e.target.value)} />
             <button className="btn small primary" disabled={!canBid(+custom)}>
-              Offri
+              {t('Offri', 'Bid')}
             </button>
           </form>
-          <small className="muted">Hai ${meP.cash}</small>
+          <small className="muted">{t('Hai', 'You have')} ${meP.cash}</small>
         </>
       )}
     </div>
@@ -333,10 +344,12 @@ export function ActionPanel({
   act: (a: Action) => void;
   busy: boolean;
 }) {
+  const t = useT();
+  const lang = useLang();
   const active = activePlayer(state);
   const meP = me ? getPlayer(state, me) : undefined;
-  if (!meP) return <div className="actions"><p className="muted">👀 Stai guardando la partita</p></div>;
-  if (meP.bankrupt) return <div className="actions"><p className="muted">Sei in bancarotta: puoi continuare a guardare.</p></div>;
+  if (!meP) return <div className="actions"><p className="muted">👀 {t('Stai guardando la partita', 'You are watching the game')}</p></div>;
+  if (meP.bankrupt) return <div className="actions"><p className="muted">{t('Sei in bancarotta: puoi continuare a guardare.', 'You are bankrupt: you can keep watching.')}</p></div>;
 
   const myDebts = debtsOf(state, meP.id);
   if (myDebts.length) {
@@ -345,17 +358,19 @@ export function ActionPanel({
     return (
       <div className="actions debt-box">
         <p>
-          ⚠️ Devi pagare <b>${total}</b> ({myDebts.map((d) => d.reason).join(', ')}).
+          ⚠️ {t('Devi pagare', 'You must pay')} <b>${total}</b> ({myDebts.map((d) => (lang === 'en' ? d.reasonEn ?? d.reason : d.reason)).join(', ')}).
         </p>
         <small className="muted">
-          {canRaise ? 'Ipoteca proprietà o vendi edifici dal pannello “Proprietà”, poi paga.' : 'Non puoi raccogliere abbastanza denaro.'}
+          {canRaise
+            ? t('Ipoteca proprietà o vendi edifici dal pannello “Proprietà”, poi paga.', 'Mortgage properties or sell buildings from the “Properties” tab, then pay.')
+            : t('Non puoi raccogliere abbastanza denaro.', 'You can’t raise enough money.')}
         </small>
         <div className="row">
           <button className="btn primary" disabled={busy || meP.cash < myDebts[0].amount} onClick={() => act({ type: 'payDebt' })}>
-            Paga ${myDebts[0].amount}
+            {t('Paga', 'Pay')} ${myDebts[0].amount}
           </button>
-          <button className="btn danger" disabled={busy} onClick={() => confirm('Dichiarare bancarotta?') && act({ type: 'bankrupt' })}>
-            Bancarotta
+          <button className="btn danger" disabled={busy} onClick={() => confirm(t('Dichiarare bancarotta?', 'Declare bankruptcy?')) && act({ type: 'bankrupt' })}>
+            {t('Bancarotta', 'Bankruptcy')}
           </button>
         </div>
       </div>
@@ -366,8 +381,8 @@ export function ActionPanel({
     return (
       <div className="actions">
         <p className="muted">
-          Turno di <b style={{ color: active.color }}>{active.token} {active.name}</b>
-          {state.phase === 'buy' && ' · sta decidendo se comprare'}
+          {t('Turno di', 'Turn:')} <b style={{ color: active.color }}>{active.token} {active.name}</b>
+          {state.phase === 'buy' && t(' · sta decidendo se comprare', ' · deciding whether to buy')}
         </p>
       </div>
     );
@@ -376,20 +391,20 @@ export function ActionPanel({
   if (state.phase === 'roll') {
     return (
       <div className="actions">
-        {meP.inJail && <p className="muted">🔒 Sei in prigione (tentativo {meP.jailTurns + 1}/3)</p>}
+        {meP.inJail && <p className="muted">🔒 {t('Sei in prigione', 'You are in jail')} ({t('tentativo', 'attempt')} {meP.jailTurns + 1}/3)</p>}
         <div className="row">
           <button className="btn primary big pulse" disabled={busy} onClick={() => act({ type: 'roll' })}>
-            🎲 {meP.inJail ? 'Tenta il doppio' : 'Tira i dadi'}
+            🎲 {meP.inJail ? t('Tenta il doppio', 'Try for a double') : t('Tira i dadi', 'Roll the dice')}
           </button>
         </div>
         {meP.inJail && (
           <div className="row">
             <button className="btn small" disabled={busy || meP.cash < JAIL_FINE} onClick={() => act({ type: 'payJail' })}>
-              Paga ${JAIL_FINE}
+              {t('Paga', 'Pay')} ${JAIL_FINE}
             </button>
             {meP.jailCards.length > 0 && (
               <button className="btn small" disabled={busy} onClick={() => act({ type: 'useJailCard' })}>
-                🎫 Usa carta
+                🎫 {t('Usa carta', 'Use card')}
               </button>
             )}
           </div>
@@ -399,21 +414,21 @@ export function ActionPanel({
   }
 
   if (state.phase === 'buy') {
-    const sp = spaceOf(state.theme, meP.position);
+    const sp = spaceOf(state.theme, meP.position, lang);
     return (
       <div className="actions buy-box" style={{ ['--group' as string]: sp.group ? GROUP_COLORS[sp.group] : '#888' }}>
         <p>
-          Comprare <b>{sp.icon} {sp.name}</b> per <b>${sp.price}</b>?
+          {t('Comprare', 'Buy')} <b>{sp.icon} {sp.name}</b> {t('per', 'for')} <b>${sp.price}</b>?
         </p>
         <div className="row">
           <button className="btn primary" disabled={busy || meP.cash < sp.price!} onClick={() => act({ type: 'buy' })}>
-            Compra ${sp.price}
+            {t('Compra', 'Buy')} ${sp.price}
           </button>
           <button className="btn" disabled={busy} onClick={() => act({ type: 'decline' })}>
-            {state.settings.auctions ? '🔨 Metti all’asta' : 'Non comprare'}
+            {state.settings.auctions ? `🔨 ${t('Metti all’asta', 'Auction it')}` : t('Non comprare', 'Don’t buy')}
           </button>
         </div>
-        {meP.cash < sp.price! && <small className="muted">Contanti insufficienti: ipoteca qualcosa per comprare.</small>}
+        {meP.cash < sp.price! && <small className="muted">{t('Contanti insufficienti: ipoteca qualcosa per comprare.', 'Not enough cash: mortgage something to buy it.')}</small>}
       </div>
     );
   }
@@ -421,10 +436,10 @@ export function ActionPanel({
   if (state.phase === 'end') {
     return (
       <div className="actions">
-        <p className="muted small">Puoi costruire, ipotecare o proporre scambi prima di passare.</p>
+        <p className="muted small">{t('Puoi costruire, ipotecare o proporre scambi prima di passare.', 'You can build, mortgage or propose trades before ending your turn.')}</p>
         <div className="row">
           <button className="btn primary big" disabled={busy} onClick={() => act({ type: 'endTurn' })}>
-            Fine turno ➜
+            {t('Fine turno', 'End turn')} ➜
           </button>
         </div>
       </div>
@@ -446,6 +461,7 @@ export function WinnerModal({
   onRematch?: () => void;
   canRematch: boolean;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(true);
   if (!open) return null;
   const ranking = [...state.players].sort((a: Player, b: Player) => {
@@ -455,14 +471,14 @@ export function WinnerModal({
   });
   const winner = getPlayer(state, state.winner);
   return (
-    <Modal title="Partita finita" onClose={() => setOpen(false)}>
+    <Modal title={t('Partita finita', 'Game over')} onClose={() => setOpen(false)}>
       <div className="winner">
         <div className="trophy">🏆</div>
         <h2 style={{ color: winner?.color }}>
-          {winner?.token} {winner?.name} vince!
+          {winner?.token} {winner?.name} {t('vince!', 'wins!')}
         </h2>
         <p className="muted">
-          {state.round} giri · {Math.round((Date.now() - state.startedAt) / 60000)} minuti
+          {state.round} {t('giri', 'rounds')} · {Math.round((Date.now() - state.startedAt) / 60000)} {t('minuti', 'minutes')}
         </p>
         <ol className="ranking">
           {ranking.map((p, i) => (
@@ -471,17 +487,17 @@ export function WinnerModal({
               <span>
                 {p.token} {p.name}
               </span>
-              <span className="muted">{p.bankrupt ? 'bancarotta' : `$${netWorth(state, p.id)}`}</span>
+              <span className="muted">{p.bankrupt ? t('bancarotta', 'bankrupt') : `$${netWorth(state, p.id)}`}</span>
             </li>
           ))}
         </ol>
         <div className="modal-actions">
           <button className="btn ghost" onClick={onExit}>
-            Torna alla lobby
+            {t('Torna alla lobby', 'Back to lobby')}
           </button>
           {canRematch && onRematch && (
             <button className="btn primary" onClick={onRematch}>
-              🔁 Rivincita
+              🔁 {t('Rivincita', 'Rematch')}
             </button>
           )}
         </div>

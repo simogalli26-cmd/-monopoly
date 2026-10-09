@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
-import { BOARD, DEFAULT_SETTINGS, GROUP_COLORS, GROUP_MEMBERS, GROUP_NAMES } from '../../shared/board';
+import { BOARD, DEFAULT_SETTINGS, GROUP_COLORS, GROUP_MEMBERS } from '../../shared/board';
 import { createGame } from '../../shared/engine';
-import { MAX_NAME, MAX_SHORT, MAX_TITLE, decodeTheme, encodeTheme, sanitizeTheme, type BoardTheme } from '../../shared/theme';
+import { MAX_NAME, MAX_SHORT, MAX_TITLE, decodeTheme, encodeTheme, groupLabel, nameOf, sanitizeTheme, type BoardTheme } from '../../shared/theme';
 import type { Group } from '../../shared/types';
 import { EMOJI_PALETTE, TEMPLATES, deleteBoard, listBoards, saveBoard } from '../boards';
 import { Board } from './Board';
+import { tr, useLang, useT } from '../i18n';
 import { toast } from './Toasts';
 
 const GROUP_ORDER: Group[] = ['brown', 'lightblue', 'pink', 'orange', 'red', 'yellow', 'green', 'darkblue', 'airport', 'utility'];
@@ -53,7 +54,7 @@ export async function copyShareLink(b: BoardTheme) {
     if (navigator.share) await navigator.share({ title: `Metropoly — ${b.title}`, url: link });
     else {
       await navigator.clipboard.writeText(link);
-      toast('Link copiato! Chi lo apre può giocare con il tuo tabellone.', 'success');
+      toast(tr('Link copiato! Chi lo apre può giocare con il tuo tabellone.', 'Link copied! Anyone who opens it can play on your board.'), 'success');
     }
   } catch {
     /* share sheet dismissed */
@@ -63,6 +64,8 @@ export async function copyShareLink(b: BoardTheme) {
 // ---------------------------------------------------------------- list
 
 export function BoardList({ onEdit, onBack, onPlay }: { onEdit: (id: string) => void; onBack: () => void; onPlay: (b: BoardTheme) => void }) {
+  const t = useT();
+  const lang = useLang();
   const [boards, setBoards] = useState(listBoards);
   const create = (b: BoardTheme) => {
     saveBoard(b);
@@ -74,29 +77,31 @@ export function BoardList({ onEdit, onBack, onPlay }: { onEdit: (id: string) => 
         <button className="btn ghost" onClick={onBack}>
           ← Lobby
         </button>
-        <h1 className="page-title">🎨 I miei tabelloni</h1>
+        <h1 className="page-title">🎨 {t('I miei tabelloni', 'My boards')}</h1>
         <span />
       </header>
 
       <section className="card">
-        <h2>Crea un nuovo tabellone</h2>
+        <h2>{t('Crea un nuovo tabellone', 'Create a new board')}</h2>
         <p className="muted">
-          Cambia nomi, icone e città di tutte le caselle: la tua città, il tuo ufficio, le battute del tuo gruppo di amici. Le regole e i prezzi restano
-          gli stessi.
+          {t(
+            'Cambia nomi, icone e luoghi di tutte le caselle: la tua città, il tuo ufficio, le battute del tuo gruppo di amici. Le regole e i prezzi restano gli stessi.',
+            'Change the names, icons and places of every space: your town, your office, your friends’ inside jokes. Rules and prices stay the same.',
+          )}
         </p>
         <div className="template-grid">
-          {TEMPLATES.map((t) => (
-            <button key={t.title} className="template" onClick={() => create(t.build())}>
-              <b>{t.title}</b>
-              <small className="muted">{t.description}</small>
+          {TEMPLATES.map((tpl) => (
+            <button key={tpl.title[0]} className="template" onClick={() => create(tpl.build(lang))}>
+              <b>{t(...tpl.title)}</b>
+              <small className="muted">{t(...tpl.description)}</small>
             </button>
           ))}
         </div>
       </section>
 
       <section className="card">
-        <h2>Salvati su questo dispositivo</h2>
-        {boards.length === 0 && <p className="muted">Ancora nessun tabellone. Parti da un modello qui sopra!</p>}
+        <h2>{t('Salvati su questo dispositivo', 'Saved on this device')}</h2>
+        {boards.length === 0 && <p className="muted">{t('Ancora nessun tabellone. Parti da un modello qui sopra!', 'No boards yet. Start from a template above!')}</p>}
         <ul className="board-list">
           {boards.map((b) => (
             <li key={b.id} className="board-item">
@@ -111,19 +116,19 @@ export function BoardList({ onEdit, onBack, onPlay }: { onEdit: (id: string) => 
               </div>
               <div className="row">
                 <button className="btn small primary" onClick={() => onPlay(b)}>
-                  ▶ Gioca
+                  ▶ {t('Gioca', 'Play')}
                 </button>
                 <button className="btn small" onClick={() => onEdit(b.id)}>
-                  ✏️ Modifica
+                  ✏️ {t('Modifica', 'Edit')}
                 </button>
                 <button className="btn small" onClick={() => copyShareLink(b)}>
-                  🔗 Condividi
+                  🔗 {t('Condividi', 'Share')}
                 </button>
                 <button
                   className="icon-btn"
-                  aria-label="Elimina"
+                  aria-label={t('Elimina', 'Delete')}
                   onClick={() => {
-                    if (!confirm(`Eliminare “${b.title}”?`)) return;
+                    if (!confirm(t(`Eliminare “${b.title}”?`, `Delete “${b.title}”?`))) return;
                     deleteBoard(b.id);
                     setBoards(listBoards());
                   }}
@@ -148,14 +153,16 @@ export function BoardEditor({ id, onBack, onPlay }: { id: string; onBack: () => 
   const [picker, setPicker] = useState<number | null>(null);
   const rows = useRef(new Map<number, HTMLInputElement>());
   const touchedShort = useRef(new Set<number>());
+  const t = useT();
+  const lang = useLang();
 
   if (!board)
     return (
       <div className="center-screen">
         <div className="card narrow">
-          <p>Tabellone non trovato.</p>
+          <p>{t('Tabellone non trovato.', 'Board not found.')}</p>
           <button className="btn primary" onClick={onBack}>
-            Torna ai tabelloni
+            {t('Torna ai tabelloni', 'Back to boards')}
           </button>
         </div>
       </div>
@@ -172,7 +179,7 @@ export function BoardEditor({ id, onBack, onPlay }: { id: string; onBack: () => 
     saveBoard(clean);
     setBoard(clean);
     setSaved(true);
-    toast('Tabellone salvato', 'success');
+    toast(tr('Tabellone salvato', 'Board saved'), 'success');
     return clean;
   };
   const focusRow = (i: number) => {
@@ -188,52 +195,52 @@ export function BoardEditor({ id, onBack, onPlay }: { id: string; onBack: () => 
         <button
           className="btn small ghost"
           onClick={() => {
-            if (!saved && !confirm('Uscire senza salvare le modifiche?')) return;
+            if (!saved && !confirm(t('Uscire senza salvare le modifiche?', 'Leave without saving your changes?'))) return;
             onBack();
           }}
         >
-          ← Tabelloni
+          ← {t('Tabelloni', 'Boards')}
         </button>
         <input
           className="title-input"
           value={board.title}
           maxLength={MAX_TITLE}
           onChange={(e) => update({ ...board, title: e.target.value })}
-          aria-label="Nome del tabellone"
+          aria-label={t('Nome del tabellone', 'Board name')}
         />
         <div className="header-actions">
           <button className="btn small" onClick={() => copyShareLink(saved ? board : save())}>
-            🔗 Condividi
+            🔗 {t('Condividi', 'Share')}
           </button>
           <button className="btn small" onClick={() => onPlay(saved ? board : save())}>
-            ▶ Prova
+            ▶ {t('Prova', 'Try it')}
           </button>
           <button className="btn small primary" disabled={saved} onClick={save}>
-            {saved ? '✓ Salvato' : 'Salva'}
+            {saved ? `✓ ${t('Salvato', 'Saved')}` : t('Salva', 'Save')}
           </button>
         </div>
       </header>
 
       <div className="editor-grid">
         <div className="editor-form">
-          <p className="muted small">Tocca una casella nell’anteprima per modificarla. Prezzi e regole non cambiano.</p>
+          <p className="muted small">{t('Tocca una casella nell’anteprima per modificarla. Prezzi e regole non cambiano.', 'Tap a space in the preview to edit it. Prices and rules don’t change.')}</p>
           {GROUP_ORDER.map((g) => (
             <section key={g} className="ed-group" style={{ ['--group' as string]: GROUP_COLORS[g] }}>
               <div className="ed-group-head">
                 <i className="pick-color" />
                 <input
                   value={board.groups[g] ?? ''}
-                  placeholder={GROUP_NAMES[g]}
+                  placeholder={groupLabel(null, g, lang)}
                   maxLength={24}
                   onChange={(e) => update({ ...board, groups: { ...board.groups, [g]: e.target.value } })}
-                  aria-label="Nome del gruppo"
+                  aria-label={t('Nome del gruppo', 'Group name')}
                 />
               </div>
               {GROUP_MEMBERS[g].map((i) => {
                 const sp = board.spaces[i] ?? { name: BOARD[i].name, icon: BOARD[i].icon };
                 return (
                   <div key={i} className="ed-row">
-                    <button className="ed-icon" onClick={() => setPicker(picker === i ? null : i)} aria-label="Cambia icona">
+                    <button className="ed-icon" onClick={() => setPicker(picker === i ? null : i)} aria-label={t('Cambia icona', 'Change icon')}>
                       {sp.icon || BOARD[i].icon}
                     </button>
                     <input
@@ -243,31 +250,31 @@ export function BoardEditor({ id, onBack, onPlay }: { id: string; onBack: () => 
                       className="ed-name"
                       value={sp.name}
                       maxLength={MAX_NAME}
-                      placeholder={BOARD[i].name}
+                      placeholder={nameOf(null, i, lang)}
                       onChange={(e) =>
                         // A renamed space gets an automatic short label unless the user typed one.
                         setSpace(i, touchedShort.current.has(i) ? { name: e.target.value } : { name: e.target.value, short: '' })
                       }
-                      aria-label="Nome"
+                      aria-label={t('Nome', 'Name')}
                     />
                     <input
                       className="ed-short"
                       value={sp.short ?? ''}
                       maxLength={MAX_SHORT}
-                      placeholder="Nome breve"
+                      placeholder={t('Nome breve', 'Short name')}
                       onChange={(e) => {
                         touchedShort.current.add(i);
                         setSpace(i, { short: e.target.value });
                       }}
-                      aria-label="Nome breve sulla casella"
+                      aria-label={t('Nome breve sulla casella', 'Short name on the tile')}
                     />
                     <input
                       className="ed-city"
                       value={sp.city ?? ''}
                       maxLength={MAX_SHORT * 2}
-                      placeholder="📍 Luogo"
+                      placeholder={t('📍 Luogo', '📍 Place')}
                       onChange={(e) => setSpace(i, { city: e.target.value })}
-                      aria-label="Luogo"
+                      aria-label={t('Luogo', 'Place')}
                     />
                     <span className="ed-price muted">${BOARD[i].price}</span>
                     {picker === i && (
@@ -284,7 +291,7 @@ export function BoardEditor({ id, onBack, onPlay }: { id: string; onBack: () => 
                           </button>
                         ))}
                         <input
-                          placeholder="Altra emoji…"
+                          placeholder={t('Altra emoji…', 'Other emoji…')}
                           maxLength={8}
                           onChange={(e) => e.target.value && setSpace(i, { icon: e.target.value })}
                         />
@@ -307,14 +314,15 @@ export function BoardEditor({ id, onBack, onPlay }: { id: string; onBack: () => 
 // ---------------------------------------------------------------- import from link
 
 export function BoardImport({ code, onDone, onPlay }: { code: string; onDone: () => void; onPlay: (b: BoardTheme) => void }) {
+  const t = useT();
   const board = useMemo(() => decodeTheme(code), [code]);
   if (!board)
     return (
       <div className="center-screen">
         <div className="card narrow">
-          <p>Questo link non contiene un tabellone valido.</p>
+          <p>{t('Questo link non contiene un tabellone valido.', 'This link doesn’t contain a valid board.')}</p>
           <button className="btn primary" onClick={onDone}>
-            Vai alla lobby
+            {t('Vai alla lobby', 'Go to the lobby')}
           </button>
         </div>
       </div>
@@ -325,7 +333,7 @@ export function BoardImport({ code, onDone, onPlay }: { code: string; onDone: ()
         <button className="btn ghost" onClick={onDone}>
           ← Lobby
         </button>
-        <h1 className="page-title">🎁 Ti hanno condiviso un tabellone</h1>
+        <h1 className="page-title">🎁 {t('Ti hanno condiviso un tabellone', 'Someone shared a board with you')}</h1>
         <span />
       </header>
       <section className="card import-card">
@@ -335,17 +343,17 @@ export function BoardImport({ code, onDone, onPlay }: { code: string; onDone: ()
         </div>
         <div className="row">
           <button className="btn primary" onClick={() => onPlay(board)}>
-            ▶ Gioca contro i bot
+            ▶ {t('Gioca contro i bot', 'Play vs bots')}
           </button>
           <button
             className="btn"
             onClick={() => {
               saveBoard({ ...board, id: `b${Date.now().toString(36)}` });
-              toast('Salvato nei tuoi tabelloni: ora puoi usarlo anche nelle stanze online', 'success');
+              toast(t('Salvato nei tuoi tabelloni: ora puoi usarlo anche nelle stanze online', 'Saved to your boards: you can now use it in online rooms too'), 'success');
               onDone();
             }}
           >
-            💾 Salva nei miei tabelloni
+            💾 {t('Salva nei miei tabelloni', 'Save to my boards')}
           </button>
         </div>
       </section>

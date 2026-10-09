@@ -4,6 +4,7 @@ import { BOARD, GROUP_COLORS, GROUP_MEMBERS } from '../../shared/board';
 import { propertiesOf, validateTrade } from '../../shared/engine';
 import type { GameState, TradeDraft } from '../../shared/types';
 import { Modal } from './Modal';
+import { msg, useLang, useT } from '../i18n';
 
 interface Props {
   state: GameState;
@@ -24,26 +25,28 @@ function PropPicker({
   selected: number[];
   toggle: (i: number) => void;
 }) {
+  const t = useT();
+  const lang = useLang();
   const props = propertiesOf(state, owner);
-  if (!props.length) return <p className="muted small">Nessuna proprietà</p>;
+  if (!props.length) return <p className="muted small">{t('Nessuna proprietà', 'No properties')}</p>;
   return (
     <div className="pick-list">
       {props.map((i) => {
-        const sp = spaceOf(state.theme, i);
+        const sp = spaceOf(state.theme, i, lang);
         const own = state.ownership[i];
         const blocked = sp.type === 'property' && GROUP_MEMBERS[sp.group!].some((g) => state.ownership[g].houses > 0);
         return (
           <button
             key={i}
             disabled={blocked}
-            title={blocked ? 'Vendi prima gli edifici del gruppo' : ''}
+            title={blocked ? t('Vendi prima gli edifici del gruppo', 'Sell the buildings in the set first') : ''}
             className={`pick ${selected.includes(i) ? 'sel' : ''}`}
             style={{ ['--group' as string]: GROUP_COLORS[sp.group!] }}
             onClick={() => toggle(i)}
           >
             <i className="pick-color" />
             <span>{sp.short ?? sp.name}</span>
-            {own.mortgaged && <small>ipot.</small>}
+            {own.mortgaged && <small>{t('ipot.', 'mortg.')}</small>}
             <small className="muted">${sp.price}</small>
           </button>
         );
@@ -53,6 +56,7 @@ function PropPicker({
 }
 
 export function TradeModal({ state, me, initial, onSend, onClose }: Props) {
+  const t = useT();
   const others = state.players.filter((p) => p.id !== me && !p.bankrupt);
   const [d, setD] = useState<TradeDraft>({
     to: initial?.to ?? others[0]?.id ?? '',
@@ -73,7 +77,7 @@ export function TradeModal({ state, me, initial, onSend, onClose }: Props) {
   const worth = (props: number[], cash: number) => props.reduce((s, i) => s + (BOARD[i].price ?? 0), 0) + cash;
 
   return (
-    <Modal title="Proponi uno scambio" onClose={onClose} className="wide">
+    <Modal title={t('Proponi uno scambio', 'Propose a trade')} onClose={onClose} className="wide">
       <div className="trade-who">
         {others.map((p) => (
           <button
@@ -90,11 +94,11 @@ export function TradeModal({ state, me, initial, onSend, onClose }: Props) {
         <div className="trade-cols">
           <div className="trade-col">
             <h4>
-              Tu dai <span className="muted">(${meP.cash} disponibili)</span>
+              {t('Tu dai', 'You give')} <span className="muted">(${meP.cash} {t('disponibili', 'available')})</span>
             </h4>
             <PropPicker state={state} owner={me} selected={d.giveProps} toggle={toggle('giveProps')} />
             <label className="field">
-              <span>Contanti</span>
+              <span>{t('Contanti', 'Cash')}</span>
               <input
                 type="number"
                 min={0}
@@ -106,20 +110,20 @@ export function TradeModal({ state, me, initial, onSend, onClose }: Props) {
             </label>
             {meP.jailCards.length > 0 && (
               <label className="field">
-                <span>Carte “esci di prigione”</span>
+                <span>{t('Carte “esci di prigione”', 'Get out of jail cards')}</span>
                 <input type="number" min={0} max={meP.jailCards.length} value={d.giveCards} onChange={(e) => setD({ ...d, giveCards: +e.target.value })} />
               </label>
             )}
-            <div className="trade-sum">Valore: ${worth(d.giveProps, d.giveCash)}</div>
+            <div className="trade-sum">{t('Valore', 'Value')}: ${worth(d.giveProps, d.giveCash)}</div>
           </div>
           <div className="trade-arrows">⇄</div>
           <div className="trade-col">
             <h4>
-              {them.token} {them.name} dà <span className="muted">(${them.cash})</span>
+              {them.token} {them.name} {t('dà', 'gives')} <span className="muted">(${them.cash})</span>
             </h4>
             <PropPicker state={state} owner={them.id} selected={d.getProps} toggle={toggle('getProps')} />
             <label className="field">
-              <span>Contanti</span>
+              <span>{t('Contanti', 'Cash')}</span>
               <input
                 type="number"
                 min={0}
@@ -131,21 +135,21 @@ export function TradeModal({ state, me, initial, onSend, onClose }: Props) {
             </label>
             {them.jailCards.length > 0 && (
               <label className="field">
-                <span>Carte “esci di prigione”</span>
+                <span>{t('Carte “esci di prigione”', 'Get out of jail cards')}</span>
                 <input type="number" min={0} max={them.jailCards.length} value={d.getCards} onChange={(e) => setD({ ...d, getCards: +e.target.value })} />
               </label>
             )}
-            <div className="trade-sum">Valore: ${worth(d.getProps, d.getCash)}</div>
+            <div className="trade-sum">{t('Valore', 'Value')}: ${worth(d.getProps, d.getCash)}</div>
           </div>
         </div>
       )}
       <div className="modal-actions">
-        {error && <span className="muted small">{error}</span>}
+        {error && <span className="muted small">{msg(error)}</span>}
         <button className="btn ghost" onClick={onClose}>
-          Annulla
+          {t('Annulla', 'Cancel')}
         </button>
         <button className="btn primary" disabled={!!error} onClick={() => onSend(d)}>
-          Invia proposta
+          {t('Invia proposta', 'Send offer')}
         </button>
       </div>
     </Modal>
