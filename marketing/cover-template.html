@@ -1,0 +1,97 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Outfit', system-ui, sans-serif;
+    background:
+      radial-gradient(60% 50% at 20% 10%, rgba(124,92,255,.55), transparent 70%),
+      radial-gradient(50% 50% at 90% 30%, rgba(255,93,158,.45), transparent 70%),
+      radial-gradient(70% 60% at 50% 110%, rgba(46,230,214,.35), transparent 70%),
+      #0b0e1c;
+    display: grid; place-items: center; position: relative;
+  }
+  .stars { position: absolute; inset: 0; background-image: radial-gradient(2px 2px at 10% 20%, #fff8, transparent), radial-gradient(1.5px 1.5px at 70% 15%, #fff7, transparent), radial-gradient(2px 2px at 85% 60%, #fff6, transparent), radial-gradient(1.5px 1.5px at 30% 75%, #fff5, transparent), radial-gradient(2px 2px at 55% 40%, #fff4, transparent); }
+  .scene { position: absolute; inset: 0; display: grid; place-items: center; perspective: 1400px; }
+  .board {
+    width: var(--b); height: var(--b);
+    transform: rotateX(58deg) rotateZ(-38deg) translateY(var(--by));
+    transform-style: preserve-3d;
+    display: grid; grid-template-columns: 1.4fr repeat(9, 1fr) 1.4fr; grid-template-rows: 1.4fr repeat(9, 1fr) 1.4fr; gap: calc(var(--b) * .006);
+    padding: calc(var(--b) * .012); border-radius: calc(var(--b) * .04);
+    background: linear-gradient(145deg, #2a3164, #151a38);
+    box-shadow: 0 calc(var(--b)*.08) calc(var(--b)*.12) rgba(0,0,0,.6), inset 0 0 0 2px rgba(255,255,255,.08);
+  }
+  .tile { background: #1f2650; border-radius: calc(var(--b)*.012); position: relative; overflow: hidden; display: grid; place-items: center; font-size: calc(var(--b)*.035); }
+  .tile i { position: absolute; background: var(--c); }
+  .center { grid-row: 2 / 11; grid-column: 2 / 11; border-radius: calc(var(--b)*.03); background: radial-gradient(circle at 50% 40%, rgba(124,92,255,.35), transparent 60%), #121733; }
+  .pop { position: absolute; transform-style: preserve-3d; font-size: var(--ps); filter: drop-shadow(0 18px 18px rgba(0,0,0,.5)); }
+  .die { position: absolute; width: var(--d); height: var(--d); border-radius: 22%; background: linear-gradient(145deg,#fff,#dfe2f3); box-shadow: 0 20px 40px rgba(0,0,0,.45), inset 0 -8px 0 rgba(0,0,0,.12); display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); padding: calc(var(--d) * .14); }
+  .die b { display: grid; place-items: center; }
+  .die b.p::after { content: ''; width: 70%; height: 70%; border-radius: 50%; background: #1a1f3a; }
+  .title { position: absolute; left: 0; right: 0; text-align: center; font-weight: 500; color: #fff; letter-spacing: -0.03em; line-height: 1; font-size: var(--t); top: var(--ty); text-shadow: 0 10px 40px rgba(0,0,0,.6); }
+  .title b { font-weight: 800; background: linear-gradient(135deg,#9d84ff,#ff5d9e); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .glow { position: absolute; width: 60%; height: 30%; border-radius: 50%; background: rgba(124,92,255,.25); filter: blur(80px); }
+</style></head>
+<body>
+<div class="stars"></div>
+<div class="glow"></div>
+<div class="scene"><div class="board" id="board"></div></div>
+<div id="pops"></div>
+<div class="title">Metro<b>poly</b></div>
+<script>
+  const p = new URLSearchParams(location.search);
+  const W = innerWidth, H = innerHeight, m = Math.min(W, H);
+  const landscape = W / H > 1.3, portrait = H / W > 1.3;
+  const root = document.documentElement.style;
+  root.setProperty('--b', (landscape ? H * 0.95 : portrait ? W * 1.05 : m * 0.92) + 'px');
+  root.setProperty('--by', (landscape ? 8 : portrait ? 22 : 12) + '%');
+  root.setProperty('--t', (landscape ? H * 0.2 : portrait ? W * 0.21 : m * 0.17) + 'px');
+  root.setProperty('--ty', (landscape ? 6 : portrait ? 9 : 6) + '%');
+  root.setProperty('--ps', m * 0.09 + 'px');
+  root.setProperty('--d', m * (portrait ? 0.15 : 0.12) + 'px');
+  const colors = ['#9b5b3a','#7cc8f0','#e05aa8','#f39a33','#e8434b','#f5d33b','#2fb36b','#3a5bd9'];
+  const icons = ['🌭','🍔','☕','🥐','🍦','🎳','🕹️','🎬','👟','👗','💍','📱','🎧','💻','💪','🧖','🏥','🎮','☁️','🤖','🏝️','🚀','✈️','🎭','📰'];
+  const board = document.getElementById('board');
+  let k = 0;
+  for (let r = 1; r <= 11; r++) for (let c = 1; c <= 11; c++) {
+    if (r > 1 && r < 11 && c > 1 && c < 11) continue;
+    const d = document.createElement('div'); d.className = 'tile';
+    d.style.gridRow = r; d.style.gridColumn = c;
+    const corner = (r === 1 || r === 11) && (c === 1 || c === 11);
+    if (!corner) {
+      const col = colors[Math.floor(k / 3) % colors.length];
+      const bar = document.createElement('i'); bar.style.setProperty('--c', col);
+      if (r === 11) Object.assign(bar.style, { left: 0, right: 0, top: 0, height: '24%' });
+      else if (r === 1) Object.assign(bar.style, { left: 0, right: 0, bottom: 0, height: '24%' });
+      else if (c === 1) Object.assign(bar.style, { top: 0, bottom: 0, right: 0, width: '24%' });
+      else Object.assign(bar.style, { top: 0, bottom: 0, left: 0, width: '24%' });
+      if (k % 4 !== 3) d.appendChild(bar);
+      d.append(icons[k % icons.length]); k++;
+    } else d.append(['🏁','🔒','🛋️','👮'][(r === 1 ? 2 : 0) + (c === 1 ? 1 : 0)] || '🏁');
+    board.appendChild(d);
+  }
+  const c = document.createElement('div'); c.className = 'center'; board.appendChild(c);
+  // Dice and floating tokens
+  const pops = document.getElementById('pops');
+  const die = (x, y, rot, pips) => {
+    const e = document.createElement('div'); e.className = 'die';
+    e.style.left = x; e.style.top = y; e.style.transform = `rotate(${rot}deg)`;
+    for (let i = 0; i < 9; i++) { const b = document.createElement('b'); if (pips.includes(i)) b.className = 'p'; e.appendChild(b); }
+    pops.appendChild(e);
+  };
+  const pop = (x, y, ch, s = 1) => { const e = document.createElement('div'); e.className = 'pop'; e.style.left = x; e.style.top = y; e.style.fontSize = `calc(var(--ps) * ${s})`; e.textContent = ch; pops.appendChild(e); };
+  if (landscape) {
+    die('14%', '58%', -18, [0, 2, 4, 6, 8]); die('22%', '70%', 14, [0, 4, 8]);
+    pop('76%', '48%', '🏨', 1.3); pop('70%', '68%', '🚀', 1.1); pop('84%', '72%', '💰', 1.2); pop('8%', '36%', '🎩', 1);
+  } else if (portrait) {
+    die('10%', '72%', -18, [0, 2, 4, 6, 8]); die('30%', '80%', 14, [0, 4, 8]);
+    pop('70%', '70%', '🏨', 1.4); pop('62%', '84%', '💰', 1.2); pop('12%', '40%', '🚀', 1);
+  } else {
+    die('8%', '70%', -18, [0, 2, 4, 6, 8]); die('24%', '78%', 14, [0, 4, 8]);
+    pop('74%', '66%', '🏨', 1.3); pop('80%', '40%', '💰', 1); pop('6%', '34%', '🚀', 0.9);
+  }
+</script>
+</body></html>
