@@ -8,7 +8,7 @@ import { Privacy, Terms } from './components/Legal';
 import { OfflineGame } from './components/OfflineGame';
 import { OnlineRoom } from './components/OnlineRoom';
 import { Toasts } from './components/Toasts';
-import { adBreak, invitedRoom, isInstantMultiplayer } from './platform';
+import { adBreak, invitedRoom, isInstantMultiplayer, onJoinRoomRequest } from './platform';
 import { request } from './net';
 import { tr } from './i18n';
 import { loadPref, loadProfile, saveProfile } from './profile';
@@ -50,6 +50,10 @@ export function App() {
         const res = await request<string>('room:create', { name: '', isPrivate: true, settings, profile: p, theme: null });
         if (res.ok && res.data) go(`/room/${res.data}`);
       }
+    });
+    // Accepting a friend's invite from the portal while already playing.
+    void onJoinRoomRequest((id) => {
+      if (/^[A-Z0-9]{4,8}$/i.test(id)) go(`/room/${id.toUpperCase()}`);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [go]);

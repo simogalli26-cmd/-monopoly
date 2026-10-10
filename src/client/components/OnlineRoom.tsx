@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Ack, ChatMessage, Profile, RoomView } from '../../shared/protocol';
 import type { Action, GameState } from '../../shared/types';
 import { getSocket, request } from '../net';
-import { adBreak } from '../platform';
+import { adBreak, leftRoom, updateRoom } from '../platform';
 import { getClientId } from '../profile';
 import { sfx } from '../sound';
 import { Game } from './Game';
@@ -65,6 +65,13 @@ export function OnlineRoom({ roomId, profile, onExit }: Props) {
     await request('room:leave');
     onExit();
   }, [onExit]);
+
+  // Keep the portal informed about the room (used by its friends/invite features).
+  const joinable = !!room && room.status === 'waiting' && room.seats.length < room.settings.maxPlayers;
+  useEffect(() => {
+    if (room) void updateRoom(room.id, joinable);
+  }, [room?.id, joinable]);
+  useEffect(() => () => void leftRoom(), []);
 
   const send = useCallback((a: Action) => request('game:action', a) as Promise<Ack>, []);
   const sendChat = useCallback((t: string) => getSocket().emit('chat:send', t), []);

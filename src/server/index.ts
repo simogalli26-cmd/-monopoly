@@ -9,6 +9,7 @@ import { TEAM_SIZE, createGame } from '../shared/engine';
 import type { Ack, ChatMessage, CreateRoomPayload, Profile, RoomSeat, RoomSummary, RoomView } from '../shared/protocol';
 import { GameRunner } from '../shared/runner';
 import { sanitizeTheme, type BoardTheme } from '../shared/theme';
+import { filterText } from './chatFilter';
 import type { Action, BotLevel, Settings } from '../shared/types';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -83,7 +84,7 @@ function sanitizeProfile(raw: Partial<Profile> | undefined, room?: Room, selfId?
   if (others.some((o) => o.color === color)) color = PLAYER_COLORS.find((c) => !others.some((o) => o.color === c)) ?? color;
   let token = PLAYER_TOKENS.includes(String(raw?.token)) ? String(raw!.token) : PLAYER_TOKENS[0];
   if (others.some((o) => o.token === token)) token = PLAYER_TOKENS.find((t) => !others.some((o) => o.token === t)) ?? token;
-  return { name: clean(raw?.name, 18) || 'Giocatore', color, token };
+  return { name: filterText(clean(raw?.name, 18)) || 'Giocatore', color, token };
 }
 
 /** Puts every seat in a team (filling the smaller one) or clears teams in free-for-all. */
@@ -427,7 +428,7 @@ io.on('connection', (socket: Socket) => {
   socket.on('chat:send', (text: string) => {
     const r = room();
     const seat = r?.seats.find((s) => s.id === clientId);
-    const body = clean(text, 240);
+    const body = filterText(clean(text, 240));
     if (!r || !body) return;
     const msg: ChatMessage = {
       id: ++r.chatSeq,

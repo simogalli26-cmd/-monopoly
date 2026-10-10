@@ -240,3 +240,32 @@ async function watchPortalSettings() {
 void initPortal().then((ok) => {
   if (ok) void watchPortalSettings();
 });
+
+/** Tells CrazyGames which room the player is in and whether friends can still join it. */
+export async function updateRoom(roomId: string, isJoinable: boolean) {
+  const s = await sdk();
+  try {
+    if (portal === 'crazygames') s?.game.updateRoom?.({ roomId, isJoinable, inviteParams: { roomId } });
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function leftRoom() {
+  const s = await sdk();
+  try {
+    if (portal === 'crazygames') s?.game.leftRoom?.();
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Called when the player accepts a friend's invite from the CrazyGames UI while already in the game. */
+export async function onJoinRoomRequest(fn: (roomId: string) => void) {
+  const s = await sdk();
+  try {
+    if (portal === 'crazygames') s?.game.addJoinRoomListener?.((p: { roomId?: string } | undefined) => p?.roomId && fn(String(p.roomId)));
+  } catch {
+    /* ignore */
+  }
+}
