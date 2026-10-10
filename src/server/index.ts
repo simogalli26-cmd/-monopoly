@@ -201,7 +201,7 @@ io.on('connection', (socket: Socket) => {
       r.seats = r.seats.filter((s) => s.id !== clientId);
       systemChat(r, `${seat.name} ha lasciato la stanza.`, `${seat.name} left the room.`);
       if (!r.seats.some((s) => !s.isBot)) return deleteRoom(r);
-      if (r.hostId === clientId) r.hostId = r.seats.find((s) => !s.isBot)!.id;
+      if (r.hostId === clientId) r.hostId = (r.seats.find((s) => !s.isBot && s.connected) ?? r.seats.find((s) => !s.isBot))!.id;
     } else if (explicit && r.runner) {
       const p = r.runner.state.players.find((x) => x.id === clientId);
       if (p && !p.bankrupt && r.runner.state.phase !== 'over') {
@@ -410,11 +410,22 @@ io.on('connection', (socket: Socket) => {
     if (stillHere) return;
     if (r.status === 'waiting') {
       seat.connected = false;
+      // A host who stays away blocks everyone: hand the room to someone who is online.
+      setTimeout(() => {
+        if (!seat.connected && r.hostId === seat.id && r.status === 'waiting' && rooms.has(r.id)) {
+          const next = r.seats.find((s) => !s.isBot && s.connected);
+          if (next) {
+            r.hostId = next.id;
+            systemChat(r, `${next.name} è il nuovo host.`, `${next.name} is the new host.`);
+            broadcastRoom(r);
+          }
+        }
+      }, 5_000);
       setTimeout(() => {
         if (!seat.connected && r.status === 'waiting' && rooms.has(r.id)) {
           r.seats = r.seats.filter((s) => s !== seat);
           if (!r.seats.some((s) => !s.isBot)) return deleteRoom(r);
-          if (r.hostId === seat.id) r.hostId = r.seats.find((s) => !s.isBot)!.id;
+          if (r.hostId === seat.id) r.hostId = (r.seats.find((s) => !s.isBot && s.connected) ?? r.seats.find((s) => !s.isBot))!.id;
           broadcastRoom(r);
         }
       }, 15_000);

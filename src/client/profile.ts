@@ -16,12 +16,33 @@ const write = (k: string, v: string) => {
   }
 };
 
+let cachedClientId: string | null = null;
+
+/**
+ * Stable id of this browser. Kept in memory too: when storage is blocked (private mode,
+ * in-app browsers) every read would otherwise create a new id and the player would stop
+ * being recognised, e.g. as the host of their own room.
+ */
 export function getClientId(): string {
+  if (cachedClientId) return cachedClientId;
   let id = read('metropoly:clientId');
+  if (!id) {
+    try {
+      id = sessionStorage.getItem('metropoly:clientId');
+    } catch {
+      /* blocked too */
+    }
+  }
   if (!id) {
     id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
     write('metropoly:clientId', id);
+    try {
+      sessionStorage.setItem('metropoly:clientId', id);
+    } catch {
+      /* blocked too */
+    }
   }
+  cachedClientId = id;
   return id;
 }
 

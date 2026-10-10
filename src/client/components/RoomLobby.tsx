@@ -24,6 +24,7 @@ const LEVEL: Record<BotLevel, [string, string]> = { easy: ['facile', 'easy'], no
 export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
   const t = useT();
   const isHost = room.hostId === me;
+  const hostName = room.seats.find((x) => x.id === room.hostId)?.name ?? 'host';
   const mySeat = room.seats.find((s) => s.id === me);
   const [botLevel, setBotLevel] = useState<BotLevel>('normal');
   const [showBoard, setShowBoard] = useState(false);
@@ -107,12 +108,16 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
                 )}
               </li>
             ))}
-            {Array.from({ length: Math.max(0, room.settings.maxPlayers - room.seats.length) }, (_, i) => (
-              <li key={`empty${i}`} className="seat empty-seat">
+            {room.seats.length < room.settings.maxPlayers && (
+              <li className="seat empty-seat">
                 <span className="seat-token">·</span>
-                <span className="muted">{t('Posto libero', 'Free seat')}</span>
+                <span className="muted">
+                  {room.settings.maxPlayers - room.seats.length === 1
+                    ? t('1 posto libero', '1 free seat')
+                    : t(`${room.settings.maxPlayers - room.seats.length} posti liberi`, `${room.settings.maxPlayers - room.seats.length} free seats`)}
+                </span>
               </li>
-            ))}
+            )}
           </ul>
 
           {mySeat && (
@@ -150,16 +155,6 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
             </div>
           )}
 
-          <div className="start-row">
-            {isHost ? (
-              <button className="btn primary big" disabled={room.seats.length < 2} onClick={() => call('room:start')}>
-                ▶ {t('Inizia la partita', 'Start the game')}
-              </button>
-            ) : (
-              <p className="muted">{t('In attesa che l’host avvii la partita…', 'Waiting for the host to start the game…')}</p>
-            )}
-            {isHost && room.seats.length < 2 && <small className="muted">{t('Servono almeno 2 giocatori: invita un amico o aggiungi un bot.', 'At least 2 players are needed: invite a friend or add a bot.')}</small>}
-          </div>
         </section>
 
         <section className="card">
@@ -203,6 +198,33 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
           <ChatPanel messages={chat} onSend={sendChat} me={me} />
         </section>
       </main>
+
+      {/* Always visible: the host must never have to look for the start button. */}
+      <div className="start-bar">
+        {isHost ? (
+          room.seats.length < 2 ? (
+            <>
+              <span className="start-hint">{t('Serve almeno un altro giocatore', 'You need at least one more player')}</span>
+              <div className="row">
+                <button className="btn" onClick={copy}>
+                  🔗 {t('Invita', 'Invite')}
+                </button>
+                <button className="btn primary" onClick={() => call('room:addBot', { level: botLevel })}>
+                  🤖 {t('Aggiungi un bot', 'Add a bot')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <button className="btn primary big start-btn pulse" onClick={() => call('room:start')}>
+              ▶ {t('Inizia la partita', 'Start the game')} · {room.seats.length} {t('giocatori', 'players')}
+            </button>
+          )
+        ) : (
+          <span className="start-hint">
+            ⏳ {t('In attesa che', 'Waiting for')} <b>{hostName}</b> {t('avvii la partita', 'to start the game')}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
