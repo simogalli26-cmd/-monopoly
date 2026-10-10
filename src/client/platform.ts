@@ -245,7 +245,11 @@ void initPortal().then((ok) => {
 export async function updateRoom(roomId: string, isJoinable: boolean) {
   const s = await sdk();
   try {
-    if (portal === 'crazygames') s?.game.updateRoom?.({ roomId, isJoinable, inviteParams: { roomId } });
+    if (portal === 'crazygames') {
+      s?.game.updateRoom?.({ roomId, isJoinable, inviteParams: { roomId } });
+      // Prepare the portal invite link for this room right away, so it is ready when the player shares it.
+      if (isJoinable) await s?.game.inviteLink?.({ roomId });
+    }
   } catch {
     /* ignore */
   }
