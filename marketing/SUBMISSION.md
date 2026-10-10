@@ -10,7 +10,7 @@ Tutto quello che serve per inviare il gioco ai portali. I testi in inglese vanno
 | `cover-800x1200.png` | Copertina verticale (2:3) |
 | `cover-800x800.png` | Copertina quadrata (1:1) |
 | `preview-gameplay.mp4` | Video di anteprima (30 s di partita reale) |
-| Build del gioco | GitHub → **Actions** → ultimo run verde → artifact **metropoly-portal** (zip) |
+| Build del gioco | GitHub → **Actions** → ultimo run verde → artifact **metropoly-portal**: estrai lo zip e carica il solo file `index.html` (contiene tutto il gioco) |
 
 ## Testi (inglese)
 

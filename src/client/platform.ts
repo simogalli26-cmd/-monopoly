@@ -24,6 +24,8 @@ const SCRIPTS: Record<Exclude<PortalName, 'web'>, string> = {
 function detect(): PortalName {
   const q = new URLSearchParams(window.location.search).get('platform');
   if (q === 'crazygames' || q === 'poki') return q;
+  // The CrazyGames build ships the SDK script in index.html.
+  if (window.CrazyGames?.SDK) return 'crazygames';
   const embedder = `${document.referrer} ${Array.from(window.location.ancestorOrigins ?? []).join(' ')}`;
   if (/crazygames\./.test(embedder)) return 'crazygames';
   if (/poki\.(com|io)|poki-gdn/.test(embedder)) return 'poki';
@@ -59,7 +61,8 @@ export function initPortal(): Promise<boolean> {
   ready = withTimeout(
     (async () => {
       try {
-        await loadScript(SCRIPTS[portal]);
+        const present = portal === 'crazygames' ? !!window.CrazyGames?.SDK : !!window.PokiSDK;
+        if (!present) await loadScript(SCRIPTS[portal]);
         if (portal === 'crazygames') {
           await window.CrazyGames.SDK.init();
           window.CrazyGames.SDK.game.loadingStop?.();

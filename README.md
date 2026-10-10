@@ -95,7 +95,7 @@ Statistiche in tempo reale: `/api/stats` (partite iniziate/finite, giocatori onl
 
 ## Pubblicare su CrazyGames / Poki
 
-1. Ogni push su GitHub esegue i test e prepara la build per i portali (GitHub → **Actions** → ultimo run → artifact **metropoly-portal**). In locale: `npm run build:portal` (cartella `dist/portal`).
+1. Ogni push su GitHub esegue i test e prepara la build per i portali (GitHub → **Actions** → ultimo run → artifact **metropoly-portal**): è un unico `index.html` con tutto il gioco e lo script dell'SDK CrazyGames. In locale: `npm run build:portal` (cartella `dist/portal`).
 2. La build si collega al server indicato in `.env.portal` (`VITE_SERVER_URL`).
 3. Carica lo zip della cartella sul portale. L'adattatore `src/client/platform.ts` attiva l'SDK del portale quando il gioco gira dentro il portale (o con `?platform=crazygames` / `?platform=poki`) e mostra la pubblicità solo prima di una nuova partita, di una rivincita o all'uscita a fine partita.
 

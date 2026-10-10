@@ -12,7 +12,7 @@
     "start": "NODE_ENV=production tsx src/server/index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "build:portal": "vite build --base ./ --outDir dist/portal --mode portal"
+    "build:portal": "vite build --mode portal"
   },
   "engines": {
     "node": ">=20"
@@ -34,6 +34,7 @@
     "concurrently": "^9.2.4",
     "typescript": "^5.9.3",
     "vite": "^6.4.4",
+    "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^3.2.7"
   }
 }
