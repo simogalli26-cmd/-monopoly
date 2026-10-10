@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer } from 'node:http';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Server, type Socket } from 'socket.io';
@@ -491,10 +491,73 @@ app.get('/api/stats', (_req, res) => {
   res.json({ ...stats, online: io.engine.clientsCount, rooms: rooms.size, playing: [...rooms.values()].filter((r) => r.status === 'playing').length });
 });
 
+// ---------------------------------------------------------------- search engines
+
+/** Public address of the site as the visitor sees it (custom domain or onrender.com). */
+const siteOrigin = (req: express.Request) => {
+  const host = req.get('x-forwarded-host') ?? req.get('host') ?? 'localhost';
+  const proto = req.get('x-forwarded-proto')?.split(',')[0] ?? (/^localhost|^127\./.test(host) ? 'http' : 'https');
+  return `${proto}://${host}`;
+};
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`);
+});
+app.get('/sitemap.xml', (req, res) => {
+  res.type('application/xml').send(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${siteOrigin(req)}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url></urlset>\n`,
+  );
+});
+
+const SEO_TITLE = 'Metropoly — Online property trading game | Gioco di proprietà online';
+const SEO_DESC =
+  'Free online board game: buy businesses, build hotels and bankrupt your rivals. Play with friends or bots, 2v2 and 3v3 teams. Gioco da tavolo gratis online con amici o bot.';
+
+/** Head tags and crawler-readable text for the website (portal builds never pass through here). */
+function seoHtml(html: string, origin: string) {
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoGame',
+    name: 'Metropoly',
+    url: `${origin}/`,
+    image: `${origin}/og-image.jpg`,
+    description: SEO_DESC,
+    genre: ['Board game', 'Strategy'],
+    playMode: ['MultiPlayer', 'SinglePlayer'],
+    applicationCategory: 'Game',
+    operatingSystem: 'Web browser',
+    inLanguage: ['en', 'it'],
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+  };
+  const head = `
+    <link rel="canonical" href="${origin}/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Metropoly" />
+    <meta property="og:title" content="${SEO_TITLE}" />
+    <meta property="og:description" content="${SEO_DESC}" />
+    <meta property="og:url" content="${origin}/" />
+    <meta property="og:image" content="${origin}/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">${JSON.stringify(ld)}</script>
+  `;
+  const intro = `<main class="seo-intro"><h1>Metropoly</h1><p>${SEO_DESC}</p>
+    <p>Roll the dice, buy businesses from hot dog stands to AI labs, complete color sets, build houses and hotels, hold live auctions and trade with other players. Lancia i dadi, compra attività, costruisci case e hotel, fai aste e scambi con gli altri giocatori.</p></main>`;
+  return html
+    .replace(/<title>[^<]*<\/title>/, `<title>${SEO_TITLE}</title>`)
+    .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${SEO_DESC}" />`)
+    .replace('</head>', `${head}</head>`)
+    .replace('<div id="root"></div>', `<div id="root">${intro}</div>`);
+}
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../dist/client');
 if (existsSync(root)) {
-  app.use(express.static(root));
-  app.get('*', (_req, res) => res.sendFile(join(root, 'index.html')));
+  const indexHtml = readFileSync(join(root, 'index.html'), 'utf8');
+  const sendIndex = (req: express.Request, res: express.Response) => res.type('html').send(seoHtml(indexHtml, siteOrigin(req)));
+  app.get('/', sendIndex);
+  app.use(express.static(root, { index: false }));
+  app.get('*', sendIndex);
 }
 
 http.listen(PORT, () => console.log(`Metropoly server su http://localhost:${PORT}`));
