@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { activePlayer, getPlayer } from '../../shared/engine';
+import { TEAM_ICONS, activePlayer, getPlayer, isTeamGame } from '../../shared/engine';
 import type { Ack, ChatMessage } from '../../shared/protocol';
 import { DICE_MS, moveDuration, stepMs, walkSteps } from '../../shared/timing';
 import type { Action, DrawnCard, GameState, TradeDraft, TradeOffer } from '../../shared/types';
@@ -278,7 +278,7 @@ export function Game({ state, me, send, chat, onExit, isHost, onRematch, offline
           </span>
         </div>
         <div className="turn-pill" style={{ ['--pc' as string]: active.color }}>
-          {view.phase === 'over' ? t('Fine partita', 'Game over') : myTurn ? t('⭐ Tocca a te!', '⭐ Your turn!') : `${t('Turno di', 'Turn:')} ${active.token} ${active.name}`}
+          {view.phase === 'over' ? t('Fine partita', 'Game over') : myTurn ? t('⭐ Tocca a te!', '⭐ Your turn!') : `${t('Turno di', 'Turn:')} ${active.team !== undefined && isTeamGame(view) ? TEAM_ICONS[active.team] + ' ' : ''}${active.token} ${active.name}`}
         </div>
         <div className="header-actions">
           {roomId && (

@@ -4,6 +4,7 @@ import type { ChatMessage, RoomView } from '../../shared/protocol';
 import type { BotLevel, Settings } from '../../shared/types';
 import { getBoard, listBoards } from '../boards';
 import { request } from '../net';
+import { TEAM_COLORS, TEAM_ICONS, TEAM_NAMES } from '../../shared/engine';
 import { msg, useT } from '../i18n';
 import { roomInviteLink } from '../platform';
 import { BoardPreview } from './BoardEditor';
@@ -29,6 +30,39 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
   const [botLevel, setBotLevel] = useState<BotLevel>('normal');
   const [showBoard, setShowBoard] = useState(false);
   const myBoards = listBoards();
+
+  const teamMode = room.settings.teamMode !== 'none';
+  const teamSize = room.settings.teamMode === '3v3' ? 3 : 2;
+  const teamsReady = !teamMode || [0, 1].every((tm) => room.seats.filter((x) => x.team === tm).length === teamSize);
+  const canStart = room.seats.length >= 2 && teamsReady;
+
+  const seatRow = (s: RoomView['seats'][number]) => (
+    <li key={s.id} className="seat" style={{ ['--pc' as string]: s.color }}>
+      <span className="seat-token">{s.token}</span>
+      <span className="seat-name">
+        <b>{s.name}</b>
+        <small className="muted">
+          {s.id === room.hostId ? '👑 Host' : s.isBot ? `Bot ${t(...LEVEL[s.botLevel ?? 'normal'])}` : t('Giocatore', 'Player')}
+          {s.id === me && t(' · tu', ' · you')}
+          {!s.connected && t(' · disconnesso', ' · disconnected')}
+        </small>
+      </span>
+      {isHost && teamMode && (
+        <button
+          className="icon-btn"
+          title={t('Sposta nell’altra squadra', 'Move to the other team')}
+          onClick={() => call('room:team', { id: s.id, team: s.team === 1 ? 0 : 1 })}
+        >
+          ↔
+        </button>
+      )}
+      {isHost && s.id !== me && (
+        <button className="icon-btn" onClick={() => call('room:kick', { id: s.id })} aria-label={t('Rimuovi', 'Remove')}>
+          ✕
+        </button>
+      )}
+    </li>
+  );
 
   const call = async (event: string, payload?: unknown) => {
     const res = await request(event, payload);
@@ -85,40 +119,55 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
               </div>
             )}
           </div>
-          <ul className="seat-list">
-            {room.seats.map((s) => (
-              <li key={s.id} className="seat" style={{ ['--pc' as string]: s.color }}>
-                <span className="seat-token">{s.token}</span>
-                <span className="seat-name">
-                  <b>{s.name}</b>
-                  <small className="muted">
-                    {s.id === room.hostId
-                      ? '👑 Host'
-                      : s.isBot
-                        ? `Bot ${t(...LEVEL[s.botLevel ?? 'normal'])}`
-                        : t('Giocatore', 'Player')}
-                    {s.id === me && t(' · tu', ' · you')}
-                    {!s.connected && t(' · disconnesso', ' · disconnected')}
-                  </small>
-                </span>
-                {isHost && s.id !== me && (
-                  <button className="icon-btn" onClick={() => call('room:kick', { id: s.id })} aria-label={t('Rimuovi', 'Remove')}>
-                    ✕
-                  </button>
-                )}
-              </li>
-            ))}
-            {room.seats.length < room.settings.maxPlayers && (
-              <li className="seat empty-seat">
-                <span className="seat-token">·</span>
-                <span className="muted">
-                  {room.settings.maxPlayers - room.seats.length === 1
-                    ? t('1 posto libero', '1 free seat')
-                    : t(`${room.settings.maxPlayers - room.seats.length} posti liberi`, `${room.settings.maxPlayers - room.seats.length} free seats`)}
-                </span>
-              </li>
-            )}
-          </ul>
+          {teamMode ? (
+            <div className="teams-grid">
+              {[0, 1].map((team) => {
+                const members = room.seats.filter((x) => x.team === team);
+                const free = teamSize - members.length;
+                const canJoin = !!mySeat && mySeat.team !== team && free > 0;
+                return (
+                  <div key={team} className="team-col" style={{ ['--tc' as string]: TEAM_COLORS[team] }}>
+                    <h3>
+                      <span>
+                        {TEAM_ICONS[team]} {t(TEAM_NAMES[team][0], TEAM_NAMES[team][1])}
+                      </span>
+                      <small className="muted">
+                        {members.length}/{teamSize}
+                      </small>
+                    </h3>
+                    <ul className="seat-list">
+                      {members.map(seatRow)}
+                      {free > 0 && (
+                        <li className="seat empty-seat">
+                          <span className="seat-token">·</span>
+                          <span className="muted">{free === 1 ? t('1 posto libero', '1 free seat') : t(`${free} posti liberi`, `${free} free seats`)}</span>
+                        </li>
+                      )}
+                    </ul>
+                    {canJoin && (
+                      <button className="btn small" onClick={() => call('room:team', { id: me, team })}>
+                        ↔ {t('Passa a questa squadra', 'Join this team')}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <ul className="seat-list">
+              {room.seats.map(seatRow)}
+              {room.seats.length < room.settings.maxPlayers && (
+                <li className="seat empty-seat">
+                  <span className="seat-token">·</span>
+                  <span className="muted">
+                    {room.settings.maxPlayers - room.seats.length === 1
+                      ? t('1 posto libero', '1 free seat')
+                      : t(`${room.settings.maxPlayers - room.seats.length} posti liberi`, `${room.settings.maxPlayers - room.seats.length} free seats`)}
+                  </span>
+                </li>
+              )}
+            </ul>
+          )}
 
           {mySeat && (
             <div className="my-look">
@@ -202,9 +251,13 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
       {/* Always visible: the host must never have to look for the start button. */}
       <div className="start-bar">
         {isHost ? (
-          room.seats.length < 2 ? (
+          !canStart ? (
             <>
-              <span className="start-hint">{t('Serve almeno un altro giocatore', 'You need at least one more player')}</span>
+              <span className="start-hint">
+                {teamMode
+                  ? t(`Servono ${teamSize} giocatori per squadra (${room.seats.length}/${teamSize * 2})`, `${teamSize} players per team needed (${room.seats.length}/${teamSize * 2})`)
+                  : t('Serve almeno un altro giocatore', 'You need at least one more player')}
+              </span>
               <div className="row">
                 <button className="btn" onClick={copy}>
                   🔗 {t('Invita', 'Invite')}
@@ -216,7 +269,7 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
             </>
           ) : (
             <button className="btn primary big start-btn pulse" onClick={() => call('room:start')}>
-              ▶ {t('Inizia la partita', 'Start the game')} · {room.seats.length} {t('giocatori', 'players')}
+              ▶ {t('Inizia la partita', 'Start the game')} · {teamMode ? room.settings.teamMode.replace('v', ' vs ') : `${room.seats.length} ${t('giocatori', 'players')}`}
             </button>
           )
         ) : (

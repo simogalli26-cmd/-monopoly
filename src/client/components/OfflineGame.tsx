@@ -15,8 +15,10 @@ const ME = 'me';
 function build(config: OfflineConfig, profile: Profile): GameState {
   const colors = PLAYER_COLORS.filter((c) => c !== profile.color);
   const tokens = PLAYER_TOKENS.filter((t) => t !== profile.token);
+  // Team games: you plus (size - 1) bots against a full team of bots.
+  const teamSize = config.settings.teamMode === '2v2' ? 2 : config.settings.teamMode === '3v3' ? 3 : 0;
   const seats: PlayerSeat[] = [
-    { id: ME, name: profile.name || tr('Tu', 'You'), color: profile.color, token: profile.token, isBot: false },
+    { id: ME, name: profile.name || tr('Tu', 'You'), color: profile.color, token: profile.token, isBot: false, team: teamSize ? 0 : undefined },
     ...Array.from({ length: config.bots }, (_, i) => ({
       id: `bot${i}`,
       name: `🤖 ${BOT_NAMES[i]}`,
@@ -24,6 +26,7 @@ function build(config: OfflineConfig, profile: Profile): GameState {
       token: tokens[i % tokens.length],
       isBot: true,
       botLevel: config.level,
+      team: teamSize ? (i < teamSize - 1 ? 0 : 1) : undefined,
     })),
   ];
   return createGame({ id: 'offline', settings: config.settings, seats, now: Date.now(), theme: config.theme ?? null });

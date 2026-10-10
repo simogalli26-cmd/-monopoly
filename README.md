@@ -4,6 +4,8 @@ Gioco di proprietà multiplayer online: compra attività, costruisci, fai aste e
 
 ## Funzionalità
 
+- **Modalità a squadre 2 vs 2 e 3 vs 3** (online e contro i bot): turni alternati, niente affitto tra compagni, gruppi di colore completati in squadra, beni del compagno in bancarotta che restano alla squadra, vince l'ultima squadra in gioco.
+
 - **Editor di tabelloni personalizzati** (`#/editor`): nomi, icone, luoghi e nomi dei gruppi di tutte le caselle, modelli pronti (classico, ufficio, la mia città), anteprima dal vivo, link di condivisione e uso nelle stanze online.
 - **Pronto per i portali di giochi** (CrazyGames, Poki): pubblicità solo nelle pause naturali, inviti nativi alle stanze.
 - **Pagine del sito**: privacy, termini, segnalazione problemi, pulsante “Supporta”, sezione per aziende ed eventi, contatore dei giocatori online.

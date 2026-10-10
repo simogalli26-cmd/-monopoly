@@ -253,7 +253,9 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
             {visible.map((r) => (
               <li key={r.id} className="room-item">
                 <div className="room-info">
-                  <b>{r.name}</b>
+                  <b>
+                    {r.name} {r.teamMode !== 'none' && <span className="badge">{r.teamMode.replace('v', ' vs ')}</span>}
+                  </b>
                   <small className="muted">
                     host {r.host} · ${r.startingCash} · <code>{r.id}</code>
                   </small>
@@ -355,7 +357,11 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
           <div className="settings-grid">
             <label className="field">
               <span>{t('Avversari', 'Opponents')}</span>
-              <select value={bots} onChange={(e) => setBots(+e.target.value)}>
+              <select
+                value={settings.teamMode === '2v2' ? 3 : settings.teamMode === '3v3' ? 5 : bots}
+                disabled={settings.teamMode !== 'none'}
+                onChange={(e) => setBots(+e.target.value)}
+              >
                 {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                   <option key={n} value={n}>
                     {n}
@@ -383,7 +389,13 @@ export function Home({ profile, setProfile, pendingRoom, onJoin, onOffline, onBo
               onClick={() => {
                 ensureProfile();
                 setModal(null);
-                onOffline({ bots, level, settings: { ...settings, maxPlayers: 8 }, theme: getBoard(boardId) });
+                const teamBots = settings.teamMode === '2v2' ? 3 : settings.teamMode === '3v3' ? 5 : bots;
+                onOffline({
+                  bots: teamBots,
+                  level,
+                  settings: { ...settings, maxPlayers: settings.teamMode === 'none' ? 8 : teamBots + 1 },
+                  theme: getBoard(boardId),
+                });
               }}
             >
               {t('Gioca', 'Play')}

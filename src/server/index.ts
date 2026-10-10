@@ -123,6 +123,7 @@ const summary = (r: Room): RoomSummary => ({
   status: r.status,
   startingCash: r.settings.startingCash,
   tokens: r.seats.map((s) => s.token),
+  teamMode: r.settings.teamMode,
 });
 
 function broadcastLobby() {

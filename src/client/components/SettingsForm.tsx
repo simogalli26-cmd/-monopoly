@@ -52,6 +52,31 @@ export function SettingsForm({ value, onChange, compact }: Props) {
 
   return (
     <div className={`settings ${compact ? 'compact' : ''}`}>
+      <div className="mode-picker" role="radiogroup" aria-label={t('Modalità', 'Mode')}>
+        {(
+          [
+            ['none', '👤', t('Tutti contro tutti', 'Free for all'), t('2–8 giocatori', '2–8 players')],
+            ['2v2', '👥', '2 vs 2', t('2 squadre da 2', '2 teams of 2')],
+            ['3v3', '👨‍👩‍👦', '3 vs 3', t('2 squadre da 3', '2 teams of 3')],
+          ] as const
+        ).map(([mode, icon, label, sub]) => (
+          <button
+            key={mode}
+            type="button"
+            role="radio"
+            aria-checked={value.teamMode === mode}
+            disabled={readOnly && value.teamMode !== mode}
+            className={`mode-opt ${value.teamMode === mode ? 'sel' : ''}`}
+            onClick={() =>
+              onChange?.({ ...value, teamMode: mode, maxPlayers: mode === '2v2' ? 4 : mode === '3v3' ? 6 : Math.max(value.maxPlayers, 2) })
+            }
+          >
+            <span className="mode-icon">{icon}</span>
+            <b>{label}</b>
+            <small>{sub}</small>
+          </button>
+        ))}
+      </div>
       <div className="settings-grid">
         <label className="field">
           <span>{t('Soldi iniziali', 'Starting cash')}</span>
@@ -65,7 +90,7 @@ export function SettingsForm({ value, onChange, compact }: Props) {
         </label>
         <label className="field">
           <span>{t('Giocatori max', 'Max players')}</span>
-          <select disabled={readOnly} value={value.maxPlayers} onChange={(e) => set('maxPlayers', +e.target.value)}>
+          <select disabled={readOnly || value.teamMode !== 'none'} value={value.maxPlayers} onChange={(e) => set('maxPlayers', +e.target.value)}>
             {[2, 3, 4, 5, 6, 7, 8].map((n) => (
               <option key={n} value={n}>
                 {n}

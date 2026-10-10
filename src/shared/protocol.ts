@@ -31,6 +31,7 @@ export interface RoomSummary {
   status: RoomView['status'];
   startingCash: number;
   tokens: string[];
+  teamMode: Settings['teamMode'];
 }
 
 export interface ChatMessage {

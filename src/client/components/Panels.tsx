@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DECK_ICONS, cardText, deckName, shortOf, spaceOf } from '../../shared/theme';
 import type { Lang } from '../../shared/i18n';
 import { BOARD, GROUP_COLORS, GROUP_MEMBERS, JAIL_FINE } from '../../shared/board';
-import { activePlayer, cardsOf, debtsOf, getPlayer, liquidationValue, netWorth, propertiesOf, totalDebt } from '../../shared/engine';
+import { TEAM_COLORS, TEAM_ICONS, TEAM_NAMES, activePlayer, cardsOf, isTeamGame, debtsOf, getPlayer, liquidationValue, netWorth, propertiesOf, totalDebt } from '../../shared/engine';
 import type { Action, ColorGroup, DrawnCard, GameState, LogEntry, Player, TradeOffer } from '../../shared/types';
 import { Modal } from './Modal';
 import { logText, useLang, useT } from '../i18n';
@@ -72,14 +72,34 @@ export function PlayersPanel({
   const t = useT();
   const active = activePlayer(state);
   const canTrade = !!me && !getPlayer(state, me)?.bankrupt && state.phase !== 'over';
+  const teams = isTeamGame(state);
   return (
     <div className="players">
+      {teams && (
+        <div className="team-summary">
+          {[0, 1].map((team) => {
+            const members = state.players.filter((p) => p.team === team);
+            const worth = members.reduce((sum, p) => sum + netWorth(state, p.id), 0);
+            const alive = members.filter((p) => !p.bankrupt).length;
+            return (
+              <div key={team} className="team-sum" style={{ ['--tc' as string]: TEAM_COLORS[team] }}>
+                <b>
+                  {TEAM_ICONS[team]} {t(TEAM_NAMES[team][0], TEAM_NAMES[team][1])}
+                </b>
+                <small className="muted">
+                  ${worth} · {alive}/{members.length} {t('in gioco', 'alive')}
+                </small>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {state.players.map((p) => {
         const debt = totalDebt(state, p.id);
         return (
           <div
             key={p.id}
-            className={`player ${p.id === active.id && state.phase !== 'over' ? 'active' : ''} ${p.bankrupt ? 'out' : ''}`}
+            className={`player ${p.id === active.id && state.phase !== 'over' ? 'active' : ''} ${p.bankrupt ? 'out' : ''} ${p.team !== undefined && teams ? `team-${p.team}` : ''}`}
             style={{ ['--pc' as string]: p.color }}
           >
             <div className="player-token">{p.token}</div>
@@ -87,6 +107,11 @@ export function PlayersPanel({
               <div className="player-name">
                 <b>{p.name}</b>
                 {p.id === me && <span className="you">{t('tu', 'you')}</span>}
+                {teams && p.team !== undefined && p.id !== me && getPlayer(state, me)?.team === p.team && (
+                  <span className="team-badge" style={{ ['--tc' as string]: TEAM_COLORS[p.team] }}>
+                    {t('compagno', 'teammate')}
+                  </span>
+                )}
                 {p.inJail && <span title={t('In prigione', 'In jail')}>🔒</span>}
                 {p.jailCards.length > 0 && <span title={t('Carta esci di prigione', 'Get out of jail card')}>🎫{p.jailCards.length > 1 ? p.jailCards.length : ''}</span>}
               </div>
@@ -470,13 +495,20 @@ export function WinnerModal({
     return (b.bankruptOrder ?? 0) - (a.bankruptOrder ?? 0);
   });
   const winner = getPlayer(state, state.winner);
+  const team = isTeamGame(state) && state.winnerTeam != null ? state.winnerTeam : null;
   return (
     <Modal title={t('Partita finita', 'Game over')} onClose={() => setOpen(false)}>
       <div className="winner">
         <div className="trophy">🏆</div>
-        <h2 style={{ color: winner?.color }}>
-          {winner?.token} {winner?.name} {t('vince!', 'wins!')}
-        </h2>
+        {team !== null ? (
+          <h2 style={{ color: TEAM_COLORS[team] }}>
+            {TEAM_ICONS[team]} {t(`Vince la ${TEAM_NAMES[team][0]}!`, `The ${TEAM_NAMES[team][1]} wins!`)}
+          </h2>
+        ) : (
+          <h2 style={{ color: winner?.color }}>
+            {winner?.token} {winner?.name} {t('vince!', 'wins!')}
+          </h2>
+        )}
         <p className="muted">
           {state.round} {t('giri', 'rounds')} · {Math.round((Date.now() - state.startedAt) / 60000)} {t('minuti', 'minutes')}
         </p>
