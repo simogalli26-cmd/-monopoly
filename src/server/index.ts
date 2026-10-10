@@ -529,7 +529,9 @@ function seoHtml(html: string, origin: string) {
     inLanguage: ['en', 'it'],
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
   };
-  const head = `
+  // Google Search Console ownership check: set GOOGLE_SITE_VERIFICATION on Render (the code or the whole meta tag).
+  const gsv = (process.env.GOOGLE_SITE_VERIFICATION ?? '').match(/content="([^"]+)"/)?.[1] ?? (process.env.GOOGLE_SITE_VERIFICATION ?? '').trim();
+  const head = `${gsv ? `\n    <meta name="google-site-verification" content="${gsv.replace(/[^\w-]/g, '')}" />` : ''}
     <link rel="canonical" href="${origin}/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Metropoly" />

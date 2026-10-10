@@ -16,3 +16,6 @@ services:
       # Name shown as data controller in the privacy page.
       - key: OWNER_NAME
         sync: false
+      # Google Search Console: paste the verification code (or the whole <meta> tag Google gives you).
+      - key: GOOGLE_SITE_VERIFICATION
+        sync: false
