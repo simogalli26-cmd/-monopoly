@@ -9,6 +9,7 @@ import {
   getPlayer,
   propertiesOf,
   rentFor,
+  sameTeam,
   validateTrade,
 } from './engine';
 import type { Action, BotLevel, GameState, Player, TradeDraft, TradeOffer } from './types';
@@ -23,7 +24,7 @@ function dangerLevel(s: GameState, me: Player): number {
   for (let step = 2; step <= 12; step++) {
     const i = (me.position + step) % 40;
     const own = s.ownership[i];
-    if (own.owner && own.owner !== me.id) worst = Math.max(worst, rentFor(s, i, 7));
+    if (own.owner && !sameTeam(s, own.owner, me.id)) worst = Math.max(worst, rentFor(s, i, 7));
   }
   return worst;
 }
@@ -39,8 +40,8 @@ export function valueFor(s: GameState, who: string, index: number, removing = fa
   const sp = BOARD[index];
   const price = sp.price ?? 0;
   const members = GROUP_MEMBERS[sp.group!];
-  const mine = members.filter((i) => i !== index && s.ownership[i].owner === who).length;
-  const others = members.filter((i) => i !== index && s.ownership[i].owner && s.ownership[i].owner !== who);
+  const mine = members.filter((i) => i !== index && sameTeam(s, s.ownership[i].owner, who)).length;
+  const others = members.filter((i) => i !== index && s.ownership[i].owner && !sameTeam(s, s.ownership[i].owner, who));
   const total = members.length;
   let v = price;
   if (sp.type === 'property') {
@@ -102,22 +103,26 @@ function resolveDebts(s: GameState, me: Player): Action | null {
 function completesSet(s: GameState, who: string, index: number, incoming: number[]): boolean {
   const sp = BOARD[index];
   if (sp.type !== 'property') return false;
-  return GROUP_MEMBERS[sp.group!].every((m) => s.ownership[m].owner === who || incoming.includes(m));
+  return GROUP_MEMBERS[sp.group!].every((m) => sameTeam(s, s.ownership[m].owner, who) || incoming.includes(m));
 }
 
 export function evaluateTrade(s: GameState, me: Player, t: TradeOffer | (TradeDraft & { from: string })): number {
   const level = me.botLevel ?? 'normal';
+  const teammate = t.from !== me.id && sameTeam(s, t.from, me.id);
   let gain = t.giveCash - t.getCash + (t.giveCards - t.getCards) * 40;
   for (const i of t.giveProps) gain += valueFor(s, me.id, i);
   const iGetASet = t.giveProps.some((i) => completesSet(s, me.id, i, t.giveProps));
   for (const i of t.getProps) {
     gain -= valueFor(s, me.id, i, true);
-    // Handing an opponent a full set is dangerous, unless we get one too.
-    if (completesSet(s, t.from, i, t.getProps)) gain -= (BOARD[i].price ?? 0) * (iGetASet ? 0.3 : 1.5);
+    // Handing an opponent a full set is dangerous, unless we get one too. For a teammate it's a win.
+    if (completesSet(s, t.from, i, t.getProps)) {
+      if (teammate) gain += (BOARD[i].price ?? 0) * 1.2;
+      else gain -= (BOARD[i].price ?? 0) * (iGetASet ? 0.3 : 1.5);
+    }
   }
   // Long stalemates make everybody more willing to deal.
   const patience = Math.min(1, s.round / 60);
-  const margin = (level === 'easy' ? 0 : level === 'normal' ? 30 : 80) * (1 - patience);
+  const margin = teammate ? 0 : (level === 'easy' ? 0 : level === 'normal' ? 30 : 80) * (1 - patience);
   return gain - margin + patience * 120;
 }
 
@@ -131,7 +136,7 @@ function proposeSetTrade(s: GameState, me: Player): Action | null {
   const mine = propertiesOf(s, me.id);
   for (const members of Object.values(GROUP_MEMBERS)) {
     if (BOARD[members[0]].type !== 'property') continue;
-    const missing = members.filter((i) => s.ownership[i].owner !== me.id);
+    const missing = members.filter((i) => !sameTeam(s, s.ownership[i].owner, me.id));
     if (missing.length !== 1 || missing.length === members.length) continue;
     const target = missing[0];
     const owner = s.ownership[target].owner;
@@ -181,7 +186,7 @@ function improve(s: GameState, me: Player): Action | null {
     .sort((a, b) => valueFor(s, me.id, b) - valueFor(s, me.id, a));
   const setMember = mortgaged.find((i) => {
     const g = BOARD[i].group!;
-    return GROUP_MEMBERS[g].every((m) => s.ownership[m].owner === me.id);
+    return GROUP_MEMBERS[g].every((m) => sameTeam(s, s.ownership[m].owner, me.id));
   });
   if (setMember !== undefined) return { type: 'unmortgage', space: setMember };
 

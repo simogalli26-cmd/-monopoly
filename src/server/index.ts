@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Server, type Socket } from 'socket.io';
 import { DEFAULT_SETTINGS, PLAYER_COLORS, PLAYER_TOKENS } from '../shared/board';
-import { createGame } from '../shared/engine';
+import { TEAM_SIZE, createGame } from '../shared/engine';
 import type { Ack, ChatMessage, CreateRoomPayload, Profile, RoomSeat, RoomSummary, RoomView } from '../shared/protocol';
 import { GameRunner } from '../shared/runner';
 import { sanitizeTheme, type BoardTheme } from '../shared/theme';
@@ -71,7 +71,8 @@ function sanitizeSettings(raw: Partial<Settings> | undefined): Settings {
     doubleGoOnLanding: !!s.doubleGoOnLanding,
     randomOrder: !!s.randomOrder,
     turnTime: clamp(s.turnTime, 0, 300, 0),
-    maxPlayers: clamp(s.maxPlayers, 2, 8, 6),
+    teamMode: (['none', '2v2', '3v3'] as const).includes(s.teamMode) ? s.teamMode : 'none',
+    maxPlayers: s.teamMode === '2v2' ? 4 : s.teamMode === '3v3' ? 6 : clamp(s.maxPlayers, 2, 8, 6),
     auctionTime: clamp(s.auctionTime, 4, 20, 8),
   };
 }
@@ -83,6 +84,23 @@ function sanitizeProfile(raw: Partial<Profile> | undefined, room?: Room, selfId?
   let token = PLAYER_TOKENS.includes(String(raw?.token)) ? String(raw!.token) : PLAYER_TOKENS[0];
   if (others.some((o) => o.token === token)) token = PLAYER_TOKENS.find((t) => !others.some((o) => o.token === t)) ?? token;
   return { name: clean(raw?.name, 18) || 'Giocatore', color, token };
+}
+
+/** Puts every seat in a team (filling the smaller one) or clears teams in free-for-all. */
+function balanceTeams(r: Room) {
+  if (r.settings.teamMode === 'none') {
+    for (const seat of r.seats) delete seat.team;
+    return;
+  }
+  const size = TEAM_SIZE[r.settings.teamMode];
+  const count = (t: number) => r.seats.filter((x) => x.team === t).length;
+  for (const seat of r.seats) {
+    if (seat.team === 0 || seat.team === 1) {
+      if (count(seat.team) <= size) continue;
+    }
+    delete seat.team;
+    seat.team = count(0) <= count(1) ? 0 : 1;
+  }
 }
 
 const view = (r: Room): RoomView => ({
@@ -268,6 +286,7 @@ io.on('connection', (socket: Socket) => {
       if (r.seats.length >= r.settings.maxPlayers) return reply(ack, { ok: false, error: 'La stanza è piena' });
       const profile = sanitizeProfile(payload?.profile, r, clientId);
       r.seats.push({ id: clientId, ...profile, isBot: false, connected: true });
+      balanceTeams(r);
       systemChat(r, `${profile.name} è entrato nella stanza.`, `${profile.name} joined the room.`);
     }
     enterRoom(r);
@@ -298,7 +317,8 @@ io.on('connection', (socket: Socket) => {
       if (!bot) break;
       r.seats = r.seats.filter((s) => s !== bot);
     }
-    r.settings.maxPlayers = Math.max(r.settings.maxPlayers, r.seats.length);
+    if (r.settings.teamMode === 'none') r.settings.maxPlayers = Math.max(r.settings.maxPlayers, r.seats.length);
+    balanceTeams(r);
     broadcastRoom(r);
     reply(ack, { ok: true });
   });
@@ -320,6 +340,7 @@ io.on('connection', (socket: Socket) => {
     const name = `🤖 ${BOT_NAMES.find((n) => !usedNames.has(`🤖 ${n}`)) ?? 'Bot'}`;
     const profile = sanitizeProfile({ name, color: '', token: '' }, r, '');
     r.seats.push({ id: `bot-${newId()}`, ...profile, name, isBot: true, botLevel: level, connected: true });
+    balanceTeams(r);
     systemChat(r, `Aggiunto ${name} (${BOT_LEVEL_LABEL[level]}).`, `Added ${name} (${level}).`);
     broadcastRoom(r);
     reply(ack, { ok: true });
@@ -337,10 +358,30 @@ io.on('connection', (socket: Socket) => {
     reply(ack, { ok: true });
   });
 
+  socket.on('room:team', (payload: { id: string; team: number }, ack) => {
+    const r = room();
+    if (!r || r.status !== 'waiting' || r.settings.teamMode === 'none') return reply(ack, { ok: false });
+    const seat = r.seats.find((x) => x.id === payload?.id);
+    const team = payload?.team === 1 ? 1 : 0;
+    // The host arranges everybody; players can only switch themselves.
+    if (!seat || (!isHost(r) && seat.id !== clientId)) return reply(ack, { ok: false });
+    if (r.seats.filter((x) => x.team === team && x !== seat).length >= TEAM_SIZE[r.settings.teamMode])
+      return reply(ack, { ok: false, error: 'Questa squadra è al completo' });
+    seat.team = team;
+    broadcastRoom(r);
+    reply(ack, { ok: true });
+  });
+
   socket.on('room:start', (ack) => {
     const r = room();
     if (!r || !isHost(r) || r.status !== 'waiting') return reply(ack, { ok: false, error: 'Solo l’host può iniziare' });
     if (r.seats.length < 2) return reply(ack, { ok: false, error: 'Servono almeno 2 giocatori' });
+    if (r.settings.teamMode !== 'none') {
+      const size = TEAM_SIZE[r.settings.teamMode];
+      balanceTeams(r);
+      if ([0, 1].some((t) => r.seats.filter((x) => x.team === t).length !== size))
+        return reply(ack, { ok: false, error: `Servono ${size} giocatori per squadra` });
+    }
     const state = createGame({ id: r.id, settings: r.settings, seats: r.seats, now: Date.now(), theme: r.theme });
     r.status = 'playing';
     stats.gamesStarted++;

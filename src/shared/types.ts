@@ -42,6 +42,8 @@ export interface Space {
 
 export type BotLevel = 'easy' | 'normal' | 'hard';
 
+export type TeamMode = 'none' | '2v2' | '3v3';
+
 export interface Settings {
   startingCash: number;
   /** Rent doubles on unimproved properties of a complete color set. */
@@ -61,6 +63,8 @@ export interface Settings {
   /** Seconds per decision, 0 = unlimited. */
   turnTime: number;
   maxPlayers: number;
+  /** Team games: two teams of 2 or 3 players. */
+  teamMode: TeamMode;
   /** Seconds an auction lasts without new bids. */
   auctionTime: number;
 }
@@ -77,6 +81,8 @@ export interface Player {
   /** Decks the held "get out of jail free" cards came from. */
   jailCards: Deck[];
   bankrupt: boolean;
+  /** Team index (0 = Blue, 1 = Red) in team games. */
+  team?: number;
   /** Order of elimination (1 = first out). */
   bankruptOrder?: number;
   isBot: boolean;
@@ -168,6 +174,8 @@ export interface GameState {
   logSeq: number;
   lastCard: DrawnCard | null;
   winner: string | null;
+  /** Winning team in team games. */
+  winnerTeam?: number | null;
   turnDeadline: number | null;
   seed: number;
   startedAt: number;
@@ -195,6 +203,7 @@ export type Action =
 
 export interface PlayerSeat {
   id: string;
+  team?: number;
   name: string;
   color: string;
   token: string;

@@ -73,8 +73,21 @@ export const debtsOf = (s: GameState, id: string) => s.debts.filter((d) => d.fro
 export const totalDebt = (s: GameState, id: string): number =>
   debtsOf(s, id).reduce((sum, d) => sum + d.amount, 0);
 
+/** Players on the same side: themselves, or teammates in team games. */
+export function sameTeam(s: GameState, a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const pa = getPlayer(s, a);
+  const pb = getPlayer(s, b);
+  return pa?.team !== undefined && pa.team === pb?.team;
+}
+
+export const TEAM_SIZE: Record<string, number> = { '2v2': 2, '3v3': 3 };
+export const isTeamGame = (s: GameState) => s.settings.teamMode !== 'none' && s.players.some((p) => p.team !== undefined);
+
+/** True when `id` (with their teammates) owns the whole color group. */
 export function hasFullSet(s: GameState, group: Group, id: string): boolean {
-  return GROUP_MEMBERS[group].every((i) => s.ownership[i].owner === id);
+  return GROUP_MEMBERS[group].every((i) => sameTeam(s, s.ownership[i].owner, id));
 }
 
 export function rentFor(s: GameState, index: number, diceTotal: number): number {
@@ -86,7 +99,7 @@ export function rentFor(s: GameState, index: number, diceTotal: number): number 
     const base = space.rent![0];
     return s.settings.doubleRentOnSet && hasFullSet(s, space.group!, own.owner) ? base * 2 : base;
   }
-  const count = GROUP_MEMBERS[space.group!].filter((i) => s.ownership[i].owner === own.owner).length;
+  const count = GROUP_MEMBERS[space.group!].filter((i) => sameTeam(s, s.ownership[i].owner, own.owner)).length;
   if (space.type === 'airport') return 25 * 2 ** (count - 1);
   if (space.type === 'utility') return diceTotal * (count >= 2 ? 10 : 4);
   return 0;
@@ -165,8 +178,18 @@ export function createGame(opts: {
     startedAt: now,
     version: 0,
   };
-  const seats = [...opts.seats];
+  let seats = [...opts.seats];
   if (settings.randomOrder) shuffle(s, seats);
+  if (settings.teamMode !== 'none' && seats.every((x) => x.team === 0 || x.team === 1)) {
+    // Alternate the teams: Blue, Red, Blue, Red…
+    const a = seats.filter((x) => x.team === 0);
+    const b = seats.filter((x) => x.team === 1);
+    const first = rand(s) < 0.5 ? a : b;
+    const second = first === a ? b : a;
+    seats = first.flatMap((x, i) => (second[i] ? [x, second[i]] : [x])).concat(second.slice(first.length));
+  } else {
+    seats = seats.map(({ team: _team, ...x }) => x);
+  }
   s.players = seats.map((seat) => ({
     ...seat,
     cash: settings.startingCash,
@@ -270,6 +293,10 @@ function landOn(s: GameState, p: Player, now: number, mods: LandMods = {}) {
       }
       if (own.owner === p.id) return;
       const owner = getPlayer(s, own.owner)!;
+      if (sameTeam(s, owner.id, p.id)) {
+        log(s, `${p.name} è ospite di ${owner.name}, compagno di squadra: niente affitto.`, 'info', `${p.name} is ${owner.name}’s teammate: no rent.`);
+        return;
+      }
       if (own.mortgaged) {
         log(s, `${nameOf(s.theme, p.position)} è ipotecata: nessun affitto.`, 'info', `${en(s, p.position)} is mortgaged: no rent.`);
         return;
@@ -395,10 +422,29 @@ function nextTurn(s: GameState, now: number) {
   setPhase(s, 'roll', now);
 }
 
+export const TEAM_NAMES = [
+  ['Squadra Blu', 'Blue Team'],
+  ['Squadra Rossa', 'Red Team'],
+] as const;
+export const TEAM_COLORS = ['#3fb6ff', '#ff5d73'];
+export const TEAM_ICONS = ['🔵', '🔴'];
+
 function checkWinner(s: GameState, now: number) {
   const alive = alivePlayers(s);
+  const teams = new Set(alive.map((p) => p.team));
+  if (isTeamGame(s) && alive.length > 1 && teams.size === 1) {
+    const team = alive[0].team!;
+    s.winner = alive[0].id;
+    s.winnerTeam = team;
+    s.auction = null;
+    s.trades = [];
+    setPhase(s, 'over', now);
+    log(s, `🏆 Vince la ${TEAM_NAMES[team][0]}!`, 'turn', `🏆 The ${TEAM_NAMES[team][1]} wins!`);
+    return;
+  }
   if (alive.length <= 1) {
     s.winner = alive[0]?.id ?? null;
+    s.winnerTeam = alive[0]?.team ?? null;
     s.auction = null;
     s.trades = [];
     setPhase(s, 'over', now);
@@ -510,6 +556,12 @@ function declareBankruptcy(s: GameState, p: Player, now: number) {
     for (const i of propertiesOf(s, p.id)) s.ownership[i].owner = creditor.id;
     transferCards(p, creditor, p.jailCards.length);
     log(s, `💥 ${p.name} dichiara bancarotta! Tutti i suoi beni passano a ${creditor.name}.`, 'danger', `💥 ${p.name} goes bankrupt! All their assets go to ${creditor.name}.`);
+  } else if (isTeamGame(s) && alivePlayers(s).some((x) => x.id !== p.id && x.team === p.team)) {
+    // In team games what's left stays in the team.
+    const mate = alivePlayers(s).find((x) => x.id !== p.id && x.team === p.team)!;
+    for (const i of propertiesOf(s, p.id)) s.ownership[i].owner = mate.id;
+    transferCards(p, mate, p.jailCards.length);
+    log(s, `💥 ${p.name} dichiara bancarotta! Le sue proprietà passano al compagno ${mate.name}.`, 'danger', `💥 ${p.name} goes bankrupt! Their properties go to teammate ${mate.name}.`);
   } else {
     for (const i of propertiesOf(s, p.id)) s.ownership[i] = { owner: null, houses: 0, mortgaged: false };
     for (const deck of p.jailCards) s.decks[deck].push(cardsOf(deck).findIndex((c) => c.effect.kind === 'jailFree'));

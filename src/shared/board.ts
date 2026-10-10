@@ -198,6 +198,7 @@ export const DEFAULT_SETTINGS: Settings = {
   randomOrder: true,
   turnTime: 0,
   maxPlayers: 6,
+  teamMode: 'none',
   auctionTime: 8,
 };
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '../src/shared/board';
 import { decideBotAction } from '../src/shared/bot';
-import { applyAction, createGame, netWorth, rentFor, tick } from '../src/shared/engine';
+import { applyAction, createGame, hasFullSet, netWorth, rentFor, tick } from '../src/shared/engine';
 import type { GameState, PlayerSeat } from '../src/shared/types';
 
 const seats = (n: number): PlayerSeat[] =>
@@ -101,6 +101,45 @@ describe('engine', () => {
     } else {
       // Very long games are possible; the leader must still have a consistent state.
       expect(Math.max(...s.players.map((p) => netWorth(s, p.id)))).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('team games', () => {
+  const teamGame = (mode: '2v2' | '3v3', seed = 7) => {
+    const n = mode === '2v2' ? 4 : 6;
+    const s = seats(n).map((x, i) => ({ ...x, team: i % 2 }));
+    return createGame({ id: 't', settings: { ...DEFAULT_SETTINGS, teamMode: mode, maxPlayers: n }, seats: s, seed, now: 0 });
+  };
+
+  it('alternates teams in the turn order', () => {
+    const s = teamGame('3v3');
+    const teams = s.players.map((p) => p.team);
+    for (let i = 1; i < teams.length; i++) expect(teams[i]).not.toBe(teams[i - 1]);
+  });
+
+  it('teammates pay no rent and share color sets', () => {
+    const s = teamGame('2v2');
+    const [a, b] = s.players.filter((p) => p.team === 0);
+    s.ownership[1].owner = a.id;
+    s.ownership[3].owner = b.id;
+    // The set counts for the team: double rent for opponents.
+    expect(rentFor(s, 1, 7)).toBe(4);
+    s.ownership[1].houses = 0;
+    expect(hasFullSet(s, 'brown', b.id)).toBe(true);
+    const opp = s.players.find((p) => p.team === 1)!;
+    expect(hasFullSet(s, 'brown', opp.id)).toBe(false);
+  });
+
+  it.each([
+    ['2v2', 3],
+    ['3v3', 4],
+  ] as const)('bots finish a %s game with a winning team', (mode, seed) => {
+    const s = simulate(teamGame(mode, seed), 8000);
+    if (s.phase === 'over') {
+      expect(s.winnerTeam === 0 || s.winnerTeam === 1).toBe(true);
+      const alive = s.players.filter((p) => !p.bankrupt);
+      expect(alive.every((p) => p.team === s.winnerTeam)).toBe(true);
     }
   });
 });

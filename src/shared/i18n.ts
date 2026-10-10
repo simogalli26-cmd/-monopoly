@@ -53,10 +53,12 @@ const MESSAGES_EN: Record<string, string> = {
   'Azione non valida': 'Invalid action',
   'Server non raggiungibile': 'Server unreachable',
   'Impossibile entrare': 'Unable to join',
+  'Questa squadra è al completo': 'This team is full',
 };
 
 const PATTERNS_EN: [RegExp, (...m: string[]) => string][] = [
   [/^(.+) non ha abbastanza contanti$/, (_, n) => `${n} doesn’t have enough cash`],
+  [/^Servono (\d+) giocatori per squadra$/, (_, n) => `${n} players per team are needed`],
   [/^Scambio non più valido: (.+)$/, (_, r) => `Trade no longer valid: ${translateMessage('en', r)}`],
 ];
 
