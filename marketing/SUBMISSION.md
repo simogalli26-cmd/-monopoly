@@ -55,3 +55,9 @@ Mouse / touch. Click "Roll the dice" to move, then buy, build or trade using the
 - **GameDistribution** (gamedistribution.com/developers): distribuisce il gioco su migliaia di siti con pubblicità a ricavi condivisi. Richiede il loro SDK: chiedimi di aggiungerlo.
 - **Poki** (developers.poki.com): più selettivo, si invia una candidatura. L'SDK è già integrato.
 - **itch.io**: niente pubblicità, ma puoi mettere il gioco "a offerta libera". Carica lo zip come gioco HTML.
+
+## GameDistribution
+
+1. Crea l'account su gamedistribution.com/developers e aggiungi un nuovo gioco: il pannello ti dà il **Game ID**.
+2. Metti il Game ID in `.env.gd` (`VITE_GD_GAME_ID=...`) e fai il push: GitHub Actions crea l'artifact **metropoly-gamedistribution** (zip con il solo `index.html`).
+3. Carica quello zip così com'è su GameDistribution, insieme a copertine, video e testi qui sopra.

@@ -12,7 +12,8 @@
     "start": "NODE_ENV=production tsx src/server/index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "build:portal": "vite build --mode portal"
+    "build:portal": "vite build --mode portal",
+    "build:gd": "vite build --mode gd"
   },
   "engines": {
     "node": ">=20"

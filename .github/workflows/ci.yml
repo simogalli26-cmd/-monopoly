@@ -17,8 +17,14 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:portal
+      - run: npm run build:gd
       - name: Upload portal build (for CrazyGames / Poki)
         uses: actions/upload-artifact@v6
         with:
           name: metropoly-portal
           path: dist/portal
+      - name: Upload GameDistribution build
+        uses: actions/upload-artifact@v6
+        with:
+          name: metropoly-gamedistribution
+          path: dist/gd

@@ -6,22 +6,29 @@
  * from the embedding page.
  */
 
-type PortalName = 'web' | 'crazygames' | 'poki';
+type PortalName = 'web' | 'crazygames' | 'poki' | 'gamedistribution';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
   interface Window {
     CrazyGames?: any;
     PokiSDK?: any;
+    gdsdk?: any;
+    GD_OPTIONS?: any;
   }
 }
 
 const SCRIPTS: Record<Exclude<PortalName, 'web'>, string> = {
   crazygames: 'https://sdk.crazygames.com/crazygames-sdk-v3.js',
   poki: 'https://game-cdn.poki.com/scripts/v2/poki-sdk.js',
+  gamedistribution: 'https://html5.api.gamedistribution.com/main.min.js',
 };
 
+/** GameDistribution build (`--mode gd`): the game id comes from .env.gd. */
+const GD_GAME_ID = ((import.meta.env.VITE_GD_GAME_ID as string | undefined) ?? '').trim();
+
 function detect(): PortalName {
+  if (import.meta.env.VITE_PORTAL === 'gamedistribution') return 'gamedistribution';
   const q = new URLSearchParams(window.location.search).get('platform');
   if (q === 'crazygames' || q === 'poki') return q;
   // The CrazyGames build ships the SDK script in index.html.
@@ -41,9 +48,10 @@ let muteHandler: (muted: boolean) => void = () => {};
 /** Lets the sound module mute itself while an ad is playing. */
 export const onAdMute = (fn: (muted: boolean) => void) => (muteHandler = fn);
 
-const loadScript = (src: string) =>
+const loadScript = (src: string, id?: string) =>
   new Promise<void>((resolve, reject) => {
     const s = document.createElement('script');
+    if (id) s.id = id;
     s.src = src;
     s.async = true;
     s.onload = () => resolve();
@@ -58,6 +66,7 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T) =>
 export function initPortal(): Promise<boolean> {
   if (ready) return ready;
   if (portal === 'web') return (ready = Promise.resolve(false));
+  if (portal === 'gamedistribution') return (ready = initGameDistribution());
   ready = withTimeout(
     (async () => {
       try {
@@ -82,8 +91,43 @@ export function initPortal(): Promise<boolean> {
   return ready;
 }
 
+/** Resolves the ad break that is waiting for GameDistribution to hand the game back. */
+let gdResume: (() => void) | null = null;
+
+function initGameDistribution(): Promise<boolean> {
+  if (!GD_GAME_ID) return Promise.resolve(false);
+  return withTimeout(
+    new Promise<boolean>((resolve) => {
+      window.GD_OPTIONS = {
+        gameId: GD_GAME_ID,
+        onEvent: (event: { name: string }) => {
+          switch (event.name) {
+            case 'SDK_READY':
+              resolve(true);
+              break;
+            case 'SDK_ERROR':
+              resolve(false);
+              break;
+            case 'SDK_GAME_PAUSE':
+              muteHandler(true);
+              break;
+            case 'SDK_GAME_START':
+              muteHandler(false);
+              gdResume?.();
+              break;
+          }
+        },
+      };
+      loadScript(SCRIPTS.gamedistribution, 'gamedistribution-jssdk').catch(() => resolve(false));
+    }),
+    8000,
+    false,
+  );
+}
+
 async function sdk(): Promise<any | null> {
   if (!(await initPortal())) return null;
+  if (portal === 'gamedistribution') return window.gdsdk ?? null;
   return portal === 'crazygames' ? window.CrazyGames?.SDK : window.PokiSDK;
 }
 
@@ -95,7 +139,7 @@ export async function gameplayStart() {
   const s = await sdk();
   try {
     if (portal === 'crazygames') s?.game.gameplayStart();
-    else s?.gameplayStart();
+    else if (portal === 'poki') s?.gameplayStart();
   } catch {
     /* ignore */
   }
@@ -107,7 +151,7 @@ export async function gameplayStop() {
   const s = await sdk();
   try {
     if (portal === 'crazygames') s?.game.gameplayStop();
-    else s?.gameplayStop();
+    else if (portal === 'poki') s?.gameplayStop();
   } catch {
     /* ignore */
   }
@@ -126,6 +170,9 @@ export async function adBreak(): Promise<void> {
             adFinished: () => resolve(),
             adError: () => resolve(),
           });
+        } else if (portal === 'gamedistribution') {
+          gdResume = () => resolve();
+          Promise.resolve(s.showAd?.()).then(() => resolve(), () => resolve());
         } else {
           muteHandler(true);
           Promise.resolve(s.commercialBreak(() => muteHandler(true))).then(() => resolve(), () => resolve());
@@ -137,6 +184,7 @@ export async function adBreak(): Promise<void> {
     45000,
     undefined,
   );
+  gdResume = null;
   muteHandler(false);
 }
 

@@ -12,12 +12,22 @@ const crazyGamesSdk = (): Plugin => ({
       .replace(/\s*<link rel="(icon|apple-touch-icon|manifest)"[^>]*>/g, ''),
 });
 
+/** GameDistribution loads its SDK at runtime (platform.ts): only drop the website-only links. */
+const websiteLinksOff = (): Plugin => ({
+  name: 'strip-website-links',
+  transformIndexHtml: (html) => html.replace(/\s*<link rel="(icon|apple-touch-icon|manifest)"[^>]*>/g, ''),
+});
+
 export default defineConfig(({ mode }) => {
   const portal = mode === 'portal';
+  const gd = mode === 'gd';
   return {
-    // Portal build = a single self-contained index.html: no folders that an upload could flatten.
-    plugins: portal ? [react(), crazyGamesSdk(), viteSingleFile()] : [react()],
-    build: portal ? { outDir: 'dist/portal', emptyOutDir: true, copyPublicDir: false } : { outDir: 'dist/client', emptyOutDir: true },
+    // Portal builds = a single self-contained index.html: no folders that an upload could flatten.
+    plugins: portal ? [react(), crazyGamesSdk(), viteSingleFile()] : gd ? [react(), websiteLinksOff(), viteSingleFile()] : [react()],
+    build:
+      portal || gd
+        ? { outDir: gd ? 'dist/gd' : 'dist/portal', emptyOutDir: true, copyPublicDir: false }
+        : { outDir: 'dist/client', emptyOutDir: true },
     server: {
       port: 5173,
       proxy: {
