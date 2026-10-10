@@ -23,6 +23,7 @@ Buy businesses, build hotels and bankrupt your rivals in this online property tr
 Metropoly is a modern take on the classic property trading board game. Roll the dice, buy businesses from hot dog stands to AI labs, complete color sets, build houses and hotels, and collect rent until your rivals go bankrupt.
 
 - Play online with friends in private rooms, or against smart bots (3 difficulty levels)
+- Team modes: 2 vs 2 and 3 vs 3, with shared color sets and no rent between teammates
 - Live auctions with a timer that extends on every bid
 - Full trades: properties, cash and get-out-of-jail cards, with counter-offers
 - Mortgages, debts and bankruptcy rules
@@ -33,7 +34,7 @@ Metropoly is a modern take on the classic property trading board game. Roll the 
 **Controls:**
 Mouse / touch. Click "Roll the dice" to move, then buy, build or trade using the buttons. Space bar: roll / end turn.
 
-**Category:** Board / Strategy · **Tags:** board game, multiplayer, strategy, trading, dice, family, 2 player, bots
+**Category:** Board / Strategy · **Tags:** board game, multiplayer, strategy, trading, dice, family, 2 player, team, bots
 
 **Supported devices:** Desktop, tablet, mobile (landscape and portrait).
 
