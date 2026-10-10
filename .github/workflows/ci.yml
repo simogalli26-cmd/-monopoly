@@ -6,10 +6,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -18,7 +18,7 @@ jobs:
       - run: npm run build
       - run: npm run build:portal
       - name: Upload portal build (for CrazyGames / Poki)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: metropoly-portal
           path: dist/portal
