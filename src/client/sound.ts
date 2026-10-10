@@ -1,4 +1,4 @@
-import { onAdMute } from './platform';
+import { getPortalSettings, onAdMute } from './platform';
 import { loadPref, savePref } from './profile';
 
 let ctx: AudioContext | null = null;
@@ -13,7 +13,7 @@ export function setSound(on: boolean) {
 }
 
 function tone(freq: number, dur = 0.08, type: OscillatorType = 'sine', gain = 0.06, delay = 0) {
-  if (!enabled || adMuted) return;
+  if (!enabled || adMuted || getPortalSettings().muteAudio) return;
   try {
     ctx ||= new AudioContext();
     const t = ctx.currentTime + delay;

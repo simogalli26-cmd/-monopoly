@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from '../../shared/protocol';
 import { useLang, useT } from '../i18n';
+import { getPortalSettings, onPortalSettings } from '../platform';
 
 interface Props {
   messages: ChatMessage[];
@@ -15,6 +16,8 @@ export function ChatPanel({ messages, onSend, me }: Props) {
   const lang = useLang();
   const [text, setText] = useState('');
   const list = useRef<HTMLDivElement>(null);
+  const [chatOff, setChatOff] = useState(getPortalSettings().disableChat);
+  useEffect(() => onPortalSettings((s) => setChatOff(s.disableChat)), []);
 
   useEffect(() => {
     list.current?.scrollTo({ top: list.current.scrollHeight, behavior: 'smooth' });
@@ -25,6 +28,8 @@ export function ChatPanel({ messages, onSend, me }: Props) {
     onSend(t.trim());
     setText('');
   };
+
+  if (chatOff) return <p className="muted small">{t('La chat è disattivata nelle impostazioni.', 'Chat is disabled in your settings.')}</p>;
 
   return (
     <div className="chat">

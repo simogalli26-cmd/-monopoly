@@ -8,7 +8,9 @@ import { Privacy, Terms } from './components/Legal';
 import { OfflineGame } from './components/OfflineGame';
 import { OnlineRoom } from './components/OnlineRoom';
 import { Toasts } from './components/Toasts';
-import { adBreak, invitedRoom } from './platform';
+import { adBreak, invitedRoom, isInstantMultiplayer } from './platform';
+import { request } from './net';
+import { tr } from './i18n';
 import { loadPref, loadProfile, saveProfile } from './profile';
 
 function useHashRoute(): [string, (r: string) => void] {
@@ -32,9 +34,24 @@ export function App() {
 
   // Players arriving from a portal invite link go straight to the room.
   useEffect(() => {
-    invitedRoom().then((id) => {
-      if (id && /^[A-Z0-9]{4,8}$/i.test(id) && !window.location.hash.startsWith('#/room/')) go(`/room/${id.toUpperCase()}`);
+    invitedRoom().then(async (id) => {
+      if (window.location.hash.startsWith('#/room/')) return;
+      if (id && /^[A-Z0-9]{4,8}$/i.test(id)) return go(`/room/${id.toUpperCase()}`);
+      // "Play with friends" on the portal: open a private lobby straight away.
+      if (await isInstantMultiplayer()) {
+        const p = profile.name.trim() ? profile : { ...profile, name: `${tr('Giocatore', 'Player')}${100 + Math.floor(Math.random() * 900)}` };
+        setProfile(p);
+        let settings = DEFAULT_SETTINGS;
+        try {
+          settings = { ...DEFAULT_SETTINGS, ...JSON.parse(loadPref('settings', '{}')) };
+        } catch {
+          /* defaults */
+        }
+        const res = await request<string>('room:create', { name: '', isPrivate: true, settings, profile: p, theme: null });
+        if (res.ok && res.data) go(`/room/${res.data}`);
+      }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [go]);
 
   const setProfile = (p: Profile) => {

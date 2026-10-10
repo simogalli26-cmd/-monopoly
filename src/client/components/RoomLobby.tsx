@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PLAYER_COLORS, PLAYER_TOKENS } from '../../shared/board';
 import type { ChatMessage, RoomView } from '../../shared/protocol';
 import type { BotLevel, Settings } from '../../shared/types';
@@ -6,7 +6,7 @@ import { getBoard, listBoards } from '../boards';
 import { request } from '../net';
 import { TEAM_COLORS, TEAM_ICONS, TEAM_NAMES } from '../../shared/engine';
 import { msg, useT } from '../i18n';
-import { roomInviteLink } from '../platform';
+import { hideInviteButton, roomInviteLink, showInviteButton } from '../platform';
 import { BoardPreview } from './BoardEditor';
 import { ChatPanel } from './ChatPanel';
 import { SettingsForm } from './SettingsForm';
@@ -30,6 +30,12 @@ export function RoomLobby({ room, me, chat, sendChat, onLeave }: Props) {
   const [botLevel, setBotLevel] = useState<BotLevel>('normal');
   const [showBoard, setShowBoard] = useState(false);
   const myBoards = listBoards();
+
+  // Portal's native invite button, available while the room is waiting for players.
+  useEffect(() => {
+    void showInviteButton(room.id);
+    return () => void hideInviteButton();
+  }, [room.id]);
 
   const teamMode = room.settings.teamMode !== 'none';
   const teamSize = room.settings.teamMode === '3v3' ? 3 : 2;

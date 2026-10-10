@@ -22,7 +22,9 @@ export function request<T = unknown>(event: string, payload?: unknown): Promise<
       clearTimeout(timer);
       resolve(res ?? { ok: false });
     };
-    if (payload === undefined) s.emit(event, done);
-    else s.emit(event, payload, done);
+    const send = () => (payload === undefined ? s.emit(event, done) : s.emit(event, payload, done));
+    // Wait for the connection so "hello" (sent on connect) always goes first.
+    if (s.connected) send();
+    else s.once('connect', send);
   });
 }

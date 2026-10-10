@@ -172,3 +172,68 @@ export async function invitedRoom(): Promise<string | null> {
   }
   return fromQuery;
 }
+
+/** CrazyGames native "invite friends" button for the current room (shown while in the lobby). */
+export async function showInviteButton(roomId: string) {
+  const s = await sdk();
+  try {
+    if (portal === 'crazygames') s?.game.showInviteButton?.({ roomId });
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function hideInviteButton() {
+  const s = await sdk();
+  try {
+    if (portal === 'crazygames') s?.game.hideInviteButton?.();
+  } catch {
+    /* ignore */
+  }
+}
+
+/** The player launched the game from the portal's "play with friends" button: open a lobby right away. */
+export async function isInstantMultiplayer(): Promise<boolean> {
+  const s = await sdk();
+  try {
+    return portal === 'crazygames' && !!s?.game.isInstantMultiplayer;
+  } catch {
+    return false;
+  }
+}
+
+export interface PortalSettings {
+  muteAudio: boolean;
+  disableChat: boolean;
+}
+
+let portalSettings: PortalSettings = { muteAudio: false, disableChat: false };
+const settingsListeners = new Set<(s: PortalSettings) => void>();
+
+export const getPortalSettings = () => portalSettings;
+
+export function onPortalSettings(fn: (s: PortalSettings) => void) {
+  settingsListeners.add(fn);
+  return () => void settingsListeners.delete(fn);
+}
+
+/** Reads the portal's player settings (mute audio, disable chat) and follows their changes. */
+async function watchPortalSettings() {
+  const s = await sdk();
+  if (portal !== 'crazygames' || !s?.game) return;
+  const read = () => {
+    const g = s.game.settings ?? {};
+    portalSettings = { muteAudio: !!g.muteAudio, disableChat: !!g.disableChat };
+    settingsListeners.forEach((fn) => fn(portalSettings));
+  };
+  try {
+    read();
+    s.game.addSettingsChangeListener?.(read);
+  } catch {
+    /* ignore */
+  }
+}
+
+void initPortal().then((ok) => {
+  if (ok) void watchPortalSettings();
+});
