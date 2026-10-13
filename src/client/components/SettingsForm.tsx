@@ -21,7 +21,7 @@ const TOGGLES: { key: keyof Settings; label: [string, string]; hint: [string, st
   {
     key: 'freeParkingPot',
     label: ['Montepremi all’Area Relax', 'Chill Zone jackpot'],
-    hint: ['Tasse e multe finiscono nel piatto: chi si ferma all’Area Relax lo vince.', 'Taxes and fines go into a pot won by landing on the Chill Zone.'],
+    hint: ['Multe e pagamenti alla banca finiscono nel piatto: chi si ferma all’Area Relax lo vince.', 'Fines and payments to the bank go into a pot won by landing on the Chill Zone.'],
   },
   {
     key: 'doubleGoOnLanding',

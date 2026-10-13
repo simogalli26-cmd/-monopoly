@@ -2585,3 +2585,10 @@ a.btn {
     grid-template-columns: 1fr;
   }
 }
+
+/* Gentle, non-blocking hint (bad trade, high bid). */
+.soft-warn {
+  color: #f5c46b;
+  opacity: 0.9;
+  line-height: 1.3;
+}

@@ -352,6 +352,9 @@ export function AuctionPanel({
             </button>
           </form>
           <small className="muted">{t('Hai', 'You have')} ${meP.cash}</small>
+          {sp.price !== undefined && Math.max(+custom || 0, a.highBidder === me ? a.highBid : 0) > sp.price * 1.5 && (
+            <small className="soft-warn">⚠️ {t(`Sopra il valore della casella ($${sp.price}), ma puoi offrire lo stesso.`, `Above the space's value ($${sp.price}), but you can still bid.`)}</small>
+          )}
         </>
       )}
     </div>

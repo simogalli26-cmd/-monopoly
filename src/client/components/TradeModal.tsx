@@ -75,6 +75,10 @@ export function TradeModal({ state, me, initial, onSend, onClose }: Props) {
     setD((x) => ({ ...x, [key]: x[key].includes(i) ? x[key].filter((v) => v !== i) : [...x[key], i] }));
 
   const worth = (props: number[], cash: number) => props.reduce((s, i) => s + (BOARD[i].price ?? 0), 0) + cash;
+  // Only a hint: the player is always free to send a bad deal.
+  const giveValue = worth(d.giveProps, d.giveCash) + d.giveCards * 50;
+  const getValue = worth(d.getProps, d.getCash) + d.getCards * 50;
+  const lopsided = !error && giveValue > getValue * 1.3 + 50;
 
   return (
     <Modal title={t('Proponi uno scambio', 'Propose a trade')} onClose={onClose} className="wide">
@@ -145,6 +149,11 @@ export function TradeModal({ state, me, initial, onSend, onClose }: Props) {
       )}
       <div className="modal-actions">
         {error && <span className="muted small">{msg(error)}</span>}
+        {lopsided && (
+          <span className="soft-warn small">
+            ⚠️ {t(`Dai più di quanto ricevi ($${giveValue} contro $${getValue}). Puoi inviarla comunque.`, `You give more than you get ($${giveValue} vs $${getValue}). You can still send it.`)}
+          </span>
+        )}
         <button className="btn ghost" onClick={onClose}>
           {t('Annulla', 'Cancel')}
         </button>

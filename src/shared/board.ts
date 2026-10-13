@@ -76,7 +76,7 @@ export const BOARD: Space[] = [
   p(1, 'brown', 60, [2, 10, 30, 90, 160, 250], 50),
   { index: 2, type: 'chest', name: 'Notizie di Mercato', short: 'Mercato', icon: '📰' },
   p(3, 'brown', 60, [4, 20, 60, 180, 320, 450], 50),
-  { index: 4, type: 'tax', name: 'Tassa sul reddito', short: 'Tassa', icon: '💸', tax: 200 },
+  { index: 4, type: 'chest', name: 'Notizie di Mercato', short: 'Mercato', icon: '📰' },
   air(5, 'Aeroporto Sud', 'Aerop. Sud'),
   p(6, 'lightblue', 100, [6, 30, 90, 270, 400, 550], 50),
   { index: 7, type: 'chance', name: 'Colpo di Scena', short: 'Colpo di Scena', icon: '🎭' },
@@ -110,7 +110,7 @@ export const BOARD: Space[] = [
   air(35, 'Aeroporto Est', 'Aerop. Est'),
   { index: 36, type: 'chance', name: 'Colpo di Scena', short: 'Colpo di Scena', icon: '🎭' },
   p(37, 'darkblue', 350, [35, 175, 500, 1100, 1300, 1500], 200),
-  { index: 38, type: 'tax', name: 'Tassa di lusso', short: 'Lusso', icon: '💎', tax: 100 },
+  { index: 38, type: 'chance', name: 'Colpo di Scena', short: 'Colpo di Scena', icon: '🎭' },
   p(39, 'darkblue', 400, [50, 200, 600, 1400, 1700, 2000], 200),
 ];
 
@@ -133,7 +133,7 @@ export const NAMES_EN: Record<number, [name: string, short?: string]> = {
   1: ['Hot Dog Stand', 'Hot Dog'],
   2: ['Market News', 'Market'],
   3: ['Fast Food'],
-  4: ['Income Tax', 'Tax'],
+  4: ['Market News', 'Market'],
   5: ['South Airport', 'S. Airport'],
   6: ['Coffee Shop', 'Coffee'],
   7: ['Plot Twist'],
@@ -167,7 +167,7 @@ export const NAMES_EN: Record<number, [name: string, short?: string]> = {
   35: ['East Airport', 'E. Airport'],
   36: ['Plot Twist'],
   37: ['Luxury Resort', 'Resort'],
-  38: ['Luxury Tax', 'Luxury'],
+  38: ['Plot Twist'],
   39: ['Space Agency', 'Space'],
 };
 
@@ -248,7 +248,7 @@ export const CHEST_CARDS: Card[] = [
   { text: 'Esci gratis di prigione. Conserva questa carta.', en: 'Get out of jail free. Keep this card.', effect: { kind: 'jailFree' } },
   { text: 'Vai direttamente in prigione senza passare dalla Partenza.', en: 'Go directly to jail without passing Start.', effect: { kind: 'jail' } },
   { text: 'Matura il fondo vacanze: ritira 100.', en: 'Holiday fund matures: collect 100.', effect: { kind: 'cash', amount: 100 } },
-  { text: 'Rimborso delle tasse: ritira 20.', en: 'Tax refund: collect 20.', effect: { kind: 'cash', amount: 20 } },
+  { text: 'Cashback dalla banca: ritira 20.', en: 'Bank cashback: collect 20.', effect: { kind: 'cash', amount: 20 } },
   { text: 'È il tuo compleanno: ogni giocatore ti regala 10.', en: 'It’s your birthday: every player gives you 10.', effect: { kind: 'eachPlayer', amount: 10 } },
   { text: "L'assicurazione sulla vita matura: ritira 100.", en: 'Life insurance matures: collect 100.', effect: { kind: 'cash', amount: 100 } },
   { text: 'Spese ospedaliere: paga 100.', en: 'Hospital fees: pay 100.', effect: { kind: 'cash', amount: -100 } },
