@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Un tempio per Giustiniano</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Alegreya+Sans+SC:wght@400;500&family=Forum&display=swap">
+<style>
+/* Layout: text column on the left, the photo being discussed on the right, rendered in 3D from its depth map; the camera moves to each detail and dissolves between photos when the topic changes. */
+:root {
+  --night: #110d16;
+  --parchment: #eee4cf;
+  --muted: #b9aa90;
+  --gold: #d6ab52;
+  --gold-light: #f4d690;
+  --gold-dim: #7e6431;
+  --porphyry: #8c3552;
+  --f-display: "Forum", "Trajan Pro", Georgia, serif;
+  --f-body: "Alegreya", Georgia, "Times New Roman", serif;
+  --f-label: "Alegreya Sans SC", "Gill Sans", "Trebuchet MS", sans-serif;
+  --text-w: 40vw;
+  color-scheme: dark;
+}
+html { scroll-behavior: smooth; background: var(--night); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--night); color: var(--parchment); font-family: var(--f-body); font-size: 1.2rem; line-height: 1.62; -webkit-font-smoothing: antialiased; }
+
+/* the image stage */
+.stage { position: fixed; top: 0; right: 0; bottom: 0; width: calc(100vw - var(--text-w)); z-index: 0; }
+#photo3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: radial-gradient(ellipse at 60% 35%, #3d2a14 0%, #1a130f 50%, var(--night) 85%); }
+.stage::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 14vw; z-index: 1; background: linear-gradient(90deg, var(--night), rgba(17, 13, 22, 0)); pointer-events: none; }
+.caption {
+  position: absolute; z-index: 2; right: max(20px, env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  max-width: min(30rem, 80%); margin: 0; text-align: right;
+  font: italic 1rem/1.4 var(--f-body); color: var(--parchment); text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
+  transition: opacity 0.6s ease;
+}
+.caption::before { content: ""; display: inline-block; width: 7px; height: 7px; margin: 0 0.6rem 0.12rem 0; background: var(--gold); transform: rotate(45deg); }
+.caption.out { opacity: 0; }
+
+/* the text column */
+main {
+  position: relative; z-index: 2; width: var(--text-w); box-sizing: border-box;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+}
+.slide { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; padding-block: 12vh; box-sizing: border-box; }
+.copy { max-width: 31rem; margin-left: clamp(0px, 3.5vw, 64px); min-width: 0; }
+.js .copy { opacity: 0.14; transform: translateY(26px); transition: opacity 0.9s ease, transform 0.9s cubic-bezier(.2, .7, .2, 1); }
+.js .slide.active .copy { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .js .copy { transform: none; transition: opacity 0.2s; } }
+
+.eyebrow { font-family: var(--f-label); font-weight: 500; letter-spacing: 0.16em; font-size: 0.88rem; color: var(--gold); margin: 0 0 0.8rem; }
+h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; line-height: 1.06; margin: 0 0 1.1rem; }
+h1 { font-size: clamp(3rem, 6.4vw, 6rem); }
+h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+p { margin: 0 0 1rem; }
+.copy > :last-child { margin-bottom: 0; }
+strong { color: var(--gold-light); font-weight: 700; }
+.author { font-family: var(--f-label); letter-spacing: 0.2em; color: var(--gold); margin: 0 0 1.2rem; font-size: 0.95rem; }
+.sub { font-size: clamp(1.15rem, 1.8vw, 1.45rem); font-style: italic; margin-bottom: 2rem; }
+.motto { font-family: var(--f-display); font-size: clamp(1.4rem, 2.3vw, 1.9rem); line-height: 1.25; padding-left: 1.1rem; border-left: 2px solid var(--gold); margin: 0 0 2rem; text-wrap: balance; }
+.hint { font-family: var(--f-label); letter-spacing: 0.14em; color: var(--muted); font-size: 0.85rem; display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+kbd { font-family: var(--f-label); border: 1px solid var(--gold-dim); padding: 0.05rem 0.45rem; color: var(--gold-light); font-size: 0.85em; }
+.mosaic-caption { font-family: var(--f-display); font-size: 1.35rem; color: var(--gold-light); margin: 0 0 1rem; }
+.warning { border: 1px solid var(--porphyry); background: rgba(140, 53, 82, 0.2); padding: 0.7rem 0.9rem; }
+.warning strong { color: #ffd2dd; }
+.lead { font-family: var(--f-display); font-size: clamp(1.5rem, 2.6vw, 2.2rem); line-height: 1.22; text-wrap: balance; margin-bottom: 2.2rem; }
+.last { font-family: var(--f-display); font-size: clamp(2.1rem, 4vw, 3.6rem); line-height: 1.06; color: var(--gold-light); text-wrap: balance; margin: 0 0 1.4rem; }
+
+/* navigation */
+.rail { position: fixed; z-index: 3; right: max(14px, env(safe-area-inset-right, 0px)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.rail button { display: block; width: 11px; height: 11px; padding: 0; border: 1px solid rgba(244, 214, 144, 0.6); background: rgba(17, 13, 22, 0.4); transform: rotate(45deg); cursor: pointer; position: relative; }
+.rail button[aria-current="true"] { background: var(--gold); border-color: var(--gold); }
+.rail button span { position: absolute; right: 20px; top: 50%; transform: rotate(-45deg) translate(0, -50%); transform-origin: right center; white-space: nowrap; font: 500 0.78rem/1 var(--f-label); letter-spacing: 0.1em; color: var(--parchment); background: rgba(17, 13, 22, 0.9); padding: 0.35rem 0.55rem; opacity: 0; pointer-events: none; }
+.rail button:hover span, .rail button:focus-visible span { opacity: 1; }
+.toolbar { position: fixed; z-index: 3; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 0.6rem; align-items: center; }
+.counter { font-family: var(--f-display); color: var(--gold-light); font-variant-numeric: tabular-nums; min-width: 4.2rem; }
+.tool { font: 500 0.78rem/1 var(--f-label); letter-spacing: 0.1em; color: var(--parchment); background: rgba(17, 13, 22, 0.8); border: 1px solid var(--gold-dim); padding: 0.45rem 0.7rem; cursor: pointer; }
+.tool:hover { border-color: var(--gold); color: var(--gold-light); }
+button:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  :root { --text-w: 100vw; }
+  body { font-size: 1.05rem; }
+  .stage { left: 0; width: auto; bottom: auto; height: 48vh; height: 48svh; }
+  .stage::before { inset: auto 0 0 0; width: auto; height: 30%; background: linear-gradient(0deg, var(--night), rgba(17, 13, 22, 0)); }
+  .caption { bottom: 10px; font-size: 0.85rem; }
+  main { padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .slide { align-items: flex-start; padding-block: 52svh 12svh; }
+  .copy { margin-left: 0; }
+  .rail { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true">
+  <canvas id="photo3d"></canvas>
+  <p class="caption" id="caption"></p>
+</div>
+
+<main id="slides">
+
+  <section class="slide" data-key="intro" data-title="Titolo">
+    <div class="copy">
+      <p class="author">Maria Luigia Fobelli</p>
+      <h1>Un tempio per Giustiniano</h1>
+      <p class="sub">Santa Sofia di Costantinopoli e la «Descrizione» di Paolo Silenziario</p>
+      <p class="motto">“Vedere Santa Sofia attraverso gli occhi di un contemporaneo.”</p>
+      <p class="hint"><kbd>↓</kbd><kbd>Spazio</kbd> avanti <kbd>↑</kbd> indietro</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="nika" data-title="Una chiesa nuova">
+    <div class="copy">
+      <p class="eyebrow">532 – 537 d.C.</p>
+      <h2>Una chiesa nata da una rivolta</h2>
+      <p>Nel <strong>532</strong> Costantinopoli è sconvolta dalla <strong>rivolta di Nika</strong>, e negli scontri brucia anche la vecchia chiesa di Santa Sofia.</p>
+      <p>Giustiniano non si accontenta di ricostruirla. Vuole un edificio del tutto nuovo, capace di raccontare la rinascita della capitale, la grandezza dell’Impero e il ruolo centrale della fede cristiana. I lavori partono subito e già nel <strong>537</strong> la nuova chiesa viene inaugurata.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="architetti" data-title="Gli architetti">
+    <div class="copy">
+      <p class="eyebrow">Gli architetti</p>
+      <h2>Antemio di Tralle e Isidoro di Mileto</h2>
+      <p>Il progetto è affidato a due uomini che oggi chiameremmo scienziati più che costruttori: <strong>Antemio di Tralle</strong> e <strong>Isidoro di Mileto</strong>, esperti di matematica, geometria e meccanica.</p>
+      <p>La loro idea è un enorme spazio centrale coperto da una cupola. Il peso scende lungo una catena precisa: i grandi <strong>piloni</strong> reggono gli <strong>archi</strong>, gli archi sostengono i <strong>pennacchi</strong>, e i pennacchi trasformano la base quadrata in un cerchio su cui poggia la <strong>cupola</strong>.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="spazio" data-title="Uno spazio nuovo">
+    <div class="copy">
+      <p class="eyebrow">L’interno</p>
+      <h2>Uno spazio che sembra muoversi</h2>
+      <p>Chi entra in Santa Sofia non si trova in una semplice basilica. La pianta allungata delle chiese tradizionali si fonde con un grande spazio centrale coperto a cupola.</p>
+      <p>Semicupole, esedre, archi e gallerie si susseguono senza spigoli netti. Lo sguardo viene portato prima in avanti, poi ai lati, infine verso l’alto: lo spazio è immenso, eppure appare leggero e dinamico.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="cupola" data-title="La cupola">
+    <div class="copy">
+      <p class="eyebrow">537 · 558</p>
+      <h2>La cupola sospesa</h2>
+      <p>La cupola è il centro visivo dell’edificio. Alla sua base si apre una corona di circa <strong>quaranta finestre</strong>: la luce che entra da lì nasconde il punto d’appoggio, e dal basso la cupola sembra quasi <strong>sospesa nel vuoto</strong>.</p>
+      <p>La prima cupola però non resistette e crollò nel <strong>558</strong>. La ricostruì <strong>Isidoro il Giovane</strong>, nipote di Isidoro di Mileto, dandole una forma più alta di quella originaria.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="paolo" data-title="Paolo Silenziario">
+    <div class="copy">
+      <p class="eyebrow">Il testimone</p>
+      <h2>Paolo Silenziario</h2>
+      <p>Il vero protagonista del libro è un poeta, <strong>Paolo Silenziario</strong>, uomo della corte di Giustiniano. Il suo nome viene dalla carica di <em>silentiarius</em>, il funzionario che a palazzo garantiva ordine e silenzio.</p>
+      <p>Dopo la ricostruzione della cupola compone una lunga descrizione in versi della chiesa. Il suo valore sta nel fatto che Paolo la vede con i propri occhi, quando molti elementi originali erano ancora al loro posto. Per questo Fobelli usa le sue parole per ricostruire l’aspetto e l’esperienza della Santa Sofia di Giustiniano.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="ekphrasis" data-title="L’ekphrasis">
+    <div class="copy">
+      <p class="eyebrow">Vedere con le parole</p>
+      <h2>L’ekphrasis</h2>
+      <p>La <em>Descrizione</em> di Paolo è un’<strong>ekphrasis</strong>: un testo così vivido da far quasi vedere, con l’immaginazione, ciò che racconta.</p>
+      <p>Paolo non compila un elenco di parti dell’edificio. Lo trasforma in un’esperienza fatta di spazio e di luce, di colori, di marmi, di oro e di argento, tanto che il testo diventa quasi un equivalente letterario della chiesa.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="marmi" data-title="I marmi">
+    <div class="copy">
+      <p class="eyebrow">Pietre da tutto l’Impero</p>
+      <h2>I marmi come paesaggi</h2>
+      <p>Paolo dedica molta attenzione ai <strong>marmi</strong> che rivestono l’interno. Nelle venature delle lastre vede immagini della natura: onde, fiumi, prati fioriti, interi paesaggi.</p>
+      <p>Le pietre arrivano da diverse regioni dell’Impero e insieme fanno di Santa Sofia uno spazio ricchissimo di colori. Lucidate, riflettono la luce e rendono l’edificio ancora più leggero.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="colonne" data-title="Colonne e capitelli">
+    <div class="copy">
+      <p class="eyebrow">La pietra lavorata</p>
+      <h2>Capitelli ricamati nella pietra</h2>
+      <p>Colonne, capitelli e rivestimenti mostrano una lavorazione raffinatissima. I capitelli sono traforati così in profondità che le foglie sembrano staccarsi dal fondo, come un <strong>ricamo di pietra</strong>.</p>
+      <p>Al centro di alcuni compaiono i <strong>monogrammi imperiali</strong>, lettere intrecciate che ricordano chi ha voluto l’edificio: Giustiniano e l’imperatrice Teodora.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="luce" data-title="La luce naturale">
+    <div class="copy">
+      <p class="eyebrow">«Luce e luci nella Megale Ekklesia»</p>
+      <h2>La luce del giorno</h2>
+      <p>La luce è uno dei temi centrali del libro, che le dedica un capitolo intitolato alla <em>Megale Ekklesia</em>, la <strong>Grande Chiesa</strong>.</p>
+      <p>Di giorno la luce entra dalle numerose finestre e si riflette sui marmi, sulle superfici dorate, sui mosaici e sui metalli. Cambia con le ore, e con lei cambia la percezione dello spazio.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="lampade" data-title="Le lampade">
+    <div class="copy">
+      <p class="eyebrow">La luce artificiale</p>
+      <h2>Un edificio che fa luce</h2>
+      <p>Durante le celebrazioni si accendevano moltissime <strong>lampade</strong>. La loro luce rimbalzava sulle superfici preziose e rendeva l’interno ancora più spettacolare.</p>
+      <p>Per chi entrava di notte, Santa Sofia doveva apparire quasi come un edificio <strong>capace di produrre una luce propria</strong>.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="decorazione" data-title="La decorazione originaria">
+    <div class="copy">
+      <p class="eyebrow">VI secolo</p>
+      <h2>Una decorazione senza figure</h2>
+      <p>Oggi associamo l’arte bizantina a grandi scene con santi e imperatori. La Santa Sofia di Giustiniano era diversa: la sua decorazione era in gran parte <strong>aniconica</strong>, cioè senza figure.</p>
+      <p>Fondi d’oro, croci, motivi vegetali e geometrici coprivano volte e pareti. Molti dei mosaici figurativi che vediamo oggi sono stati aggiunti nei secoli successivi.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="ambone" data-title="Ambone e recinzione">
+    <div class="copy">
+      <p class="eyebrow">Elementi perduti</p>
+      <h2>Quello che non si vede più</h2>
+      <p>L’<strong>ambone</strong> era una struttura monumentale da cui si leggevano i testi sacri e si proclamava la parola: un piccolo edificio dentro l’edificio, molto più di un leggio.</p>
+      <p>La <strong>recinzione presbiteriale</strong> separava invece la zona dell’altare, riservata al clero, dal resto della chiesa. Di entrambi oggi non resta nulla, e Fobelli li ricostruisce partendo dalle parole di Paolo.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="potere" data-title="Il potere imperiale">
+    <div class="copy">
+      <p class="eyebrow">Architettura e potere</p>
+      <h2>Il segno dell’imperatore</h2>
+      <p>Santa Sofia è anche una dichiarazione di potere. Mostra la <strong>ricchezza dell’Impero</strong>, la <strong>capacità tecnica</strong> dei suoi costruttori, la <strong>forza politica</strong> di Giustiniano e la <strong>centralità della fede</strong>.</p>
+      <p>La magnificenza della chiesa e la celebrazione dell’imperatore si rafforzano a vicenda: lodare l’una significa lodare anche l’altro.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="mosaico" data-title="Il mosaico">
+    <div class="copy">
+      <p class="eyebrow">Una memoria successiva</p>
+      <h2>Giustiniano nel mosaico</h2>
+      <p>Qui <strong>Giustiniano</strong> offre alla Vergine con il Bambino il modello di Santa Sofia, mentre dall’altra parte <strong>Costantino</strong> offre la città.</p>
+      <p class="mosaic-caption">“Mosaico del vestibolo sud, X secolo circa.”</p>
+      <p class="warning"><strong>Non appartiene al VI secolo.</strong> Fu realizzato molto più tardi, intorno al X secolo, e ci dice come i Bizantini ricordavano Giustiniano: il grande costruttore della loro chiesa più importante.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="perche" data-title="Perché Paolo">
+    <div class="copy">
+      <p class="eyebrow">Quindici secoli di cambiamenti</p>
+      <h2>Perché Paolo è indispensabile</h2>
+      <p>La Santa Sofia di oggi è il risultato di molti secoli di trasformazioni: terremoti e crolli, ricostruzioni e restauri, nuove decorazioni e modifiche liturgiche, poi la trasformazione in moschea e gli interventi moderni.</p>
+      <p>Molto di ciò che Paolo vide è scomparso o è stato coperto. La sua <em>Descrizione</em> ci permette di conoscere anche ciò che oggi <strong>non possiamo più vedere</strong>.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="significato" data-title="Il significato del libro">
+    <div class="copy">
+      <p class="eyebrow">Il metodo del libro</p>
+      <h2>Le parole e il monumento</h2>
+      <p>Il cuore del libro è il confronto continuo tra le <strong>parole di Paolo Silenziario</strong> e il <strong>monumento reale</strong>.</p>
+      <p>Fobelli usa una fonte contemporanea per ricostruire la Santa Sofia del VI secolo, e la studia non soltanto come architettura, ma come un’esperienza fatta di spazio, materia, colore e luce.</p>
+    </div>
+  </section>
+
+  <section class="slide" data-key="fine" data-title="Conclusione">
+    <div class="copy">
+      <p class="eyebrow">Conclusione</p>
+      <p class="lead">Santa Sofia non viene raccontata soltanto come un monumento. Attraverso Paolo Silenziario diventa un’esperienza visiva, materiale e luminosa.</p>
+      <p class="last">“Ricostruire il monumento attraverso le parole di chi lo vide.”</p>
+      <p class="hint">Maria Luigia Fobelli · <em>Un tempio per Giustiniano</em></p>
+    </div>
+  </section>
+
+</main>
+
+<ol class="rail" id="rail" aria-label="Sezioni"></ol>
+<div class="toolbar">
+  <span class="counter" id="counter" aria-live="polite">1 / 18</span>
+  <button type="button" class="tool" id="fullscreen">Schermo intero</button>
+</div>
+
+<!--PHOTO_ASSETS-->
+<script>
+(function () {
+  'use strict';
+  document.documentElement.classList.add('js');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const rail = document.getElementById('rail');
+  const counter = document.getElementById('counter');
+  const ASSETS = window.PHOTO_ASSETS || {};
+  const HAS_EXT = !!ASSETS.esterno;
+
+  /* What the image shows for each section: photo, centre of the detail (0..1 from top left), zoom (0 = whole photo), caption.
+     Sections with an exterior shot fall back to an interior one until an exterior photo is added. */
+  const SHOTS = {
+    intro:       HAS_EXT ? ['esterno', 0.5, 0.5, 1.0, 'Santa Sofia a Istanbul, vista dall’esterno'] : ['vestibolo', 0.47, 0.5, 1.0, 'Il vestibolo sud, da cui si entra nella chiesa'],
+    nika:        HAS_EXT ? ['esterno', 0.5, 0.45, 1.15, 'L’edificio voluto da Giustiniano, inaugurato nel 537'] : ['vestibolo', 0.47, 0.62, 1.6, 'Dal vestibolo verso l’interno della chiesa di Giustiniano'],
+    architetti:  ['gallerie', 0.42, 0.5, 1.35, 'Archi su colonne e pilastri: il peso scende verso i sostegni'],
+    spazio:      ['gallerie', 0.5, 0.5, 1.0, 'Archi, gallerie e superfici curve che si rincorrono'],
+    cupola:      HAS_EXT ? ['esterno', 0.5, 0.32, 1.6, 'La cupola, con la corona di finestre alla base'] : ['gallerie', 0.5, 0.16, 1.5, 'Lo sguardo sale oltre le gallerie, verso le volte dorate'],
+    paolo:       ['vestibolo', 0.47, 0.62, 1.7, 'Il percorso di chi entra: dal vestibolo verso la navata'],
+    ekphrasis:   ['vestibolo', 0.47, 0.45, 1.05, 'Marmi, oro e luce: i materiali che Paolo trasforma in parole'],
+    marmi:       ['pilone', 0.4, 0.58, 1.35, 'Lastre di marmo venato sul rivestimento di un pilone'],
+    colonne:     ['capitello', 0.52, 0.5, 1.1, 'Capitello traforato con monogramma, VI secolo'],
+    luce:        ['pilone', 0.11, 0.33, 1.8, 'Luce naturale da una finestra, riflessa sul marmo'],
+    lampade:     ['vestibolo', 0.46, 0.68, 2.3, 'Lampadari nel vestibolo (di epoca successiva)'],
+    decorazione: ['gallerie', 0.52, 0.82, 1.7, 'Volta decorata con motivi ornamentali, senza figure'],
+    ambone:      ['gallerie', 0.36, 0.62, 1.25, 'Ambone e recinzione non si sono conservati: restano le parole di Paolo', 0.55],
+    potere:      ['capitello', 0.535, 0.43, 2.5, 'Monogramma imperiale al centro di un capitello'],
+    mosaico:     ['mosaico', 0.5, 0.5, 0, 'Mosaico del vestibolo sud, X secolo circa'],
+    perche:      HAS_EXT ? ['esterno', 0.5, 0.5, 1.0, 'L’edificio oggi, con i minareti aggiunti in età ottomana'] : ['vestibolo', 0.2, 0.55, 1.6, 'Pareti del vestibolo: marmi, lacune e restauri di epoche diverse'],
+    significato: ['mosaico', 0.27, 0.5, 1.9, 'Giustiniano offre il modello della chiesa (mosaico del X secolo)'],
+    fine:        HAS_EXT ? ['esterno', 0.5, 0.5, 1.05, 'Santa Sofia, Istanbul'] : ['vestibolo', 0.47, 0.5, 1.0, 'Il vestibolo sud di Santa Sofia'],
+  };
+
+  /* ---------- Navigation ---------- */
+  slides.forEach((s, i) => {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', s.dataset.title);
+    b.innerHTML = '<span>' + s.dataset.title + '</span>';
+    b.addEventListener('click', () => goTo(i));
+    li.appendChild(b);
+    rail.appendChild(li);
+  });
+  const railButtons = Array.from(rail.querySelectorAll('button'));
+  let current = -1;
+  const listeners = [];
+  function goTo(i) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    slides[i].scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  }
+  function nearestSlide() {
+    const mid = window.innerHeight * 0.5;
+    let best = 0, bd = Infinity;
+    slides.forEach((s, i) => {
+      const r = s.getBoundingClientRect();
+      const d = Math.abs((r.top + r.bottom) / 2 - mid);
+      if (d < bd) { bd = d; best = i; }
+    });
+    return best;
+  }
+  function update() {
+    const i = nearestSlide();
+    if (i === current) return;
+    current = i;
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    railButtons.forEach((b, k) => b.setAttribute('aria-current', k === i ? 'true' : 'false'));
+    counter.textContent = (i + 1) + ' / ' + slides.length;
+    listeners.forEach((fn) => fn(slides[i].dataset.key));
+  }
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; update(); }); }
+  }, { passive: true });
+  window.addEventListener('resize', update);
+  window.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const onButton = (e.target.tagName || '').toLowerCase() === 'button';
+    if (['ArrowDown', 'PageDown', 'ArrowRight'].includes(e.key) || (e.key === ' ' && !onButton && !e.shiftKey)) { e.preventDefault(); goTo(nearestSlide() + 1); }
+    else if (['ArrowUp', 'PageUp', 'ArrowLeft'].includes(e.key) || (e.key === ' ' && e.shiftKey)) { e.preventDefault(); goTo(nearestSlide() - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    else if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1); }
+  });
+  document.getElementById('fullscreen').addEventListener('click', () => {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else { const p = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if (p && p.catch) p.catch(() => {}); }
+    } catch (err) { /* fullscreen not available here */ }
+  });
+
+  /* ---------- Caption under the image ---------- */
+  const caption = document.getElementById('caption');
+  let capTimer = 0;
+  listeners.push((k) => {
+    const text = (SHOTS[k] || SHOTS.intro)[4];
+    if (caption.textContent === text) return;
+    caption.classList.add('out');
+    clearTimeout(capTimer);
+    capTimer = setTimeout(() => { caption.textContent = text; caption.classList.remove('out'); }, reduced ? 0 : 450);
+  });
+
+  /* ---------- 3D photos: depth-displaced parallax, camera moves between details, depth dissolve between photos ---------- */
+  (function photo3d() {
+    const cv = document.getElementById('photo3d');
+    const g = cv.getContext('webgl', { antialias: false });
+    if (!g) return;
+    const vs = 'attribute vec2 p; varying vec2 vUv; void main(){ vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }';
+    const fs = [
+      'precision highp float;',
+      'uniform sampler2D uImgA, uDepA, uImgB, uDepB;',
+      'uniform vec2 uScaleA, uScaleB, uCenA, uCenB, uOff;',
+      'uniform float uZoomA, uZoomB, uDimA, uDimB, uMix, uTime;',
+      'varying vec2 vUv;',
+      'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+      'float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);',
+      '  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }',
+      'vec4 look(sampler2D img, sampler2D dep, vec2 scale, vec2 cen, float zoom) {',
+      '  vec2 uv = (vUv - 0.5) * scale / zoom + cen;',
+      '  vec2 q = uv; float d = 0.0;',
+      '  for (int i = 0; i < 8; i++) { d = texture2D(dep, q).r; q = uv + uOff / zoom * (d - 0.4); }',
+      '  vec2 inside = smoothstep(vec2(-0.004), vec2(0.004), q) * smoothstep(vec2(-0.004), vec2(0.004), 1.0 - q);',
+      '  return vec4(texture2D(img, clamp(q, 0.002, 0.998)).rgb * inside.x * inside.y, d);',
+      '}',
+      'void main() {',
+      '  vec4 a = look(uImgA, uDepA, uScaleA, uCenA, uZoomA);',
+      '  vec3 c = a.rgb * uDimA;',
+      '  if (uMix > 0.0) {',
+      '    vec4 b = look(uImgB, uDepB, uScaleB, uCenB, uZoomB);',
+      '    float v = 1.0 - b.a * 0.65 - noise(vUv * 7.0) * 0.35;',
+      '    float t = uMix * 1.5 - 0.25;',
+      '    float m = 1.0 - smoothstep(t - 0.1, t + 0.1, v);',
+      '    float edge = (1.0 - smoothstep(0.0, 0.07, abs(v - t))) * (1.0 - uMix);',
+      '    c = mix(c, b.rgb * uDimB, m) + vec3(1.0, 0.72, 0.32) * edge * 0.9;',
+      '  }',
+      '  c = pow(c, vec3(1.04)) * vec3(0.95, 0.9, 0.82);',
+      '  float vig = smoothstep(1.2, 0.3, length((vUv - 0.5) * vec2(1.2, 1.0)));',
+      '  float grain = (hash(vUv * 900.0 + uTime) - 0.5) * 0.035;',
+      '  gl_FragColor = vec4(c * (0.45 + 0.55 * vig) + grain, 1.0);',
+      '}',
+    ].join('\n');
+    function sh(type, src) { const s = g.createShader(type); g.shaderSource(s, src); g.compileShader(s); return s; }
+    const prog = g.createProgram();
+    g.attachShader(prog, sh(g.VERTEX_SHADER, vs)); g.attachShader(prog, sh(g.FRAGMENT_SHADER, fs)); g.linkProgram(prog);
+    if (!g.getProgramParameter(prog, g.LINK_STATUS)) return;
+    g.useProgram(prog);
+    g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer());
+    g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
+    const loc = g.getAttribLocation(prog, 'p'); g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, 2, g.FLOAT, false, 0, 0);
+    const U = {};
+    ['uImgA', 'uDepA', 'uImgB', 'uDepB', 'uScaleA', 'uScaleB', 'uCenA', 'uCenB', 'uOff', 'uZoomA', 'uZoomB', 'uDimA', 'uDimB', 'uMix', 'uTime']
+      .forEach((n) => { U[n] = g.getUniformLocation(prog, n); });
+    g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, true);
+
+    function tex(img) {
+      const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t);
+      g.texImage2D(g.TEXTURE_2D, 0, g.RGB, g.RGB, g.UNSIGNED_BYTE, img);
+      [g.TEXTURE_WRAP_S, g.TEXTURE_WRAP_T].forEach((w) => g.texParameteri(g.TEXTURE_2D, w, g.CLAMP_TO_EDGE));
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.LINEAR);
+      return t;
+    }
+    function loadImg(src) { return new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; }); }
+    const cache = {};
+    function photo(name) {
+      if (!cache[name]) {
+        cache[name] = Promise.all([loadImg(ASSETS[name] || 'assets/' + name + '.jpg'), loadImg(ASSETS[name + '-depth'] || 'assets/' + name + '-depth.png')])
+          .then(([im, dp]) => ({ name, img: tex(im), dep: tex(dp), aspect: im.width / im.height }));
+      }
+      return cache[name];
+    }
+
+    // A is on screen (its camera glides to new details of the same photo); B dissolves in when the photo changes
+    let A = null, B = null, mixStart = 0, wanted = '';
+    // zoom 0 fits the whole photo inside the stage
+    function zoomFor(ph, z) { if (z) return z; const sc = scaleFor(ph); return Math.min(1, sc[0], sc[1]) / 1.12; }
+    function view(ph, s) { const z = zoomFor(ph, s[3]); return { ph, cx: s[1], cy: s[2], z, dim: s[5] || 1, tcx: s[1], tcy: s[2], tz: z, tdim: s[5] || 1 }; }
+    function show(k) {
+      const s = SHOTS[k] || SHOTS.intro;
+      wanted = k;
+      photo(s[0]).then((ph) => {
+        if (wanted !== k) return;
+        if (!A) { A = view(ph, s); return; }
+        const top = B || A;
+        if (top.ph === ph) { Object.assign(top, { tcx: s[1], tcy: s[2], tz: zoomFor(ph, s[3]), tdim: s[5] || 1 }); return; }
+        if (B) A = B;
+        B = view(ph, s); mixStart = performance.now();
+      }).catch(() => {});
+    }
+    listeners.push(show);
+    setTimeout(() => Object.values(SHOTS).forEach((s) => photo(s[0]).catch(() => {})), 800);
+
+    const pointer = { x: 0, y: 0, sx: 0, sy: 0 };
+    window.addEventListener('pointermove', (e) => { pointer.x = e.clientX / window.innerWidth - 0.5; pointer.y = e.clientY / window.innerHeight - 0.5; }, { passive: true });
+    function resize() {
+      const r = Math.min(window.devicePixelRatio || 1, 1.5);
+      cv.width = Math.max(1, Math.round(cv.clientWidth * r)); cv.height = Math.max(1, Math.round(cv.clientHeight * r));
+      g.viewport(0, 0, cv.width, cv.height);
+    }
+    window.addEventListener('resize', resize); resize();
+
+    function scaleFor(ph) { const sa = cv.width / cv.height; return sa > ph.aspect ? [1, ph.aspect / sa] : [sa / ph.aspect, 1]; }
+    function centre(v, sc) {
+      // keep the visible window inside the photo, with a margin for the parallax
+      const hx = 0.5 * sc[0] / v.z + 0.02, hy = 0.5 * sc[1] / v.z + 0.02;
+      const fit = (c, h) => (h >= 0.5 ? 0.5 : Math.min(Math.max(c, h), 1 - h));
+      return [fit(v.cx, hx), 1 - fit(v.cy, hy)];
+    }
+    function bind(unit, t, u) { g.activeTexture(g.TEXTURE0 + unit); g.bindTexture(g.TEXTURE_2D, t); g.uniform1i(u, unit); }
+    function glide(v, k) { v.cx += (v.tcx - v.cx) * k; v.cy += (v.tcy - v.cy) * k; v.z += (v.tz - v.z) * k; v.dim += (v.tdim - v.dim) * k; }
+    let last = performance.now();
+    function frame(now) {
+      requestAnimationFrame(frame);
+      const dt = Math.min(0.1, (now - last) / 1000); last = now;
+      if (!A) return;
+      const k = reduced ? 1 : 1 - Math.exp(-dt * 1.4);
+      glide(A, k); if (B) glide(B, k);
+      let mix = 0;
+      if (B) {
+        mix = reduced ? 1 : Math.min(1, (now - mixStart) / 2200);
+        if (mix >= 1) { A = B; B = null; mix = 0; }
+      }
+      const t = now / 1000, live = reduced ? 0 : 1;
+      pointer.sx += (pointer.x - pointer.sx) * 0.04; pointer.sy += (pointer.y - pointer.sy) * 0.04;
+      g.uniform2f(U.uOff, live * (Math.sin(t * 0.23) * 0.03 - pointer.sx * 0.05), live * (Math.cos(t * 0.19) * 0.018 + pointer.sy * 0.035));
+      g.uniform1f(U.uTime, t % 100);
+      g.uniform1f(U.uMix, mix);
+      const breathe = 1 + live * 0.03 * Math.sin(t * 0.11);
+      const sa = scaleFor(A.ph);
+      bind(0, A.ph.img, U.uImgA); bind(1, A.ph.dep, U.uDepA);
+      g.uniform2fv(U.uScaleA, sa); g.uniform2fv(U.uCenA, centre(A, sa)); g.uniform1f(U.uZoomA, A.z * 1.06 * breathe); g.uniform1f(U.uDimA, A.dim);
+      const Bv = B || A, sb = scaleFor(Bv.ph);
+      bind(2, Bv.ph.img, U.uImgB); bind(3, Bv.ph.dep, U.uDepB);
+      g.uniform2fv(U.uScaleB, sb); g.uniform2fv(U.uCenB, centre(Bv, sb)); g.uniform1f(U.uZoomB, Bv.z * 1.06 * breathe); g.uniform1f(U.uDimB, Bv.dim);
+      g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  update();
+})();
+</script>
+</body>
+</html>
