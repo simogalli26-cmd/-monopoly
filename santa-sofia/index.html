@@ -36,18 +36,15 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
 .veil {
   position: fixed; inset: 0; pointer-events: none; z-index: 1;
   background: linear-gradient(90deg, rgba(17, 13, 22, 0.7) 0%, rgba(17, 13, 22, 0) 50%, rgba(17, 13, 22, 0) 70%, rgba(17, 13, 22, 0.45) 100%);
 }
-.film { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: var(--night); opacity: 0; transition: opacity 1.4s ease; }
-.film.on { opacity: 1; }
+.film { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; background: radial-gradient(ellipse at 68% 32%, #4a3418 0%, #1c1410 45%, var(--night) 80%); }
 .film video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.4s ease; filter: saturate(1.05) brightness(0.82); }
-.film video.on { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .film, .film video { transition: none; } }
-.no-webgl #scene { display: none; }
-.no-webgl .veil { background: radial-gradient(ellipse at 70% 30%, #3a2a1a 0%, var(--night) 60%); }
+.film video.on { opacity: 1; animation: drift 14s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: scale(1.02) translate3d(0, 0, 0); } to { transform: scale(1.1) translate3d(-1.5%, -1%, 0); } }
+@media (prefers-reduced-motion: reduce) { .film video { transition: none; animation: none !important; } }
 
 main {
   position: relative; z-index: 2;
@@ -193,13 +190,13 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
 </style>
 </head>
 <body>
-<canvas id="scene" aria-hidden="true"></canvas>
 <!-- Animated backgrounds generated with Higgsfield (Kling 3.0) from photos of the interior -->
 <div class="film" id="film" aria-hidden="true">
-  <video muted loop playsinline preload="none" data-keys="intro fine" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_3I8Z3iNNCN9kim46g9nUlUr8Aiw/hf_20261017_085235_128643fb-8cee-4b61-bbae-b0be557951eb.mp4"></video>
-  <video muted loop playsinline preload="none" data-keys="spazio luce" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_3I8Z3iNNCN9kim46g9nUlUr8Aiw/hf_20261017_085235_0c0e0686-a363-4a0f-ad70-fc00cc37096d.mp4"></video>
-  <video muted loop playsinline preload="none" data-keys="marmi colonne" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_3I8Z3iNNCN9kim46g9nUlUr8Aiw/hf_20261017_085235_1b7be308-f718-4e95-a8a0-ffdf7ffd4c53.mp4"></video>
-  <video muted loop playsinline preload="none" data-keys="cupola decorazione" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_3I8Z3iNNCN9kim46g9nUlUr8Aiw/hf_20261017_085235_58a91464-7a14-4318-ae3f-778e91115246.mp4"></video>
+  <video muted loop playsinline preload="none" data-keys="intro fine" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_3I8Z3iNNCN9kim46g9nUlUr8Aiw/hf_20261017_090105_9efc8b20-e6d5-4bde-b5a4-de91a21f42ee.mp4"></video>
+  <video muted loop playsinline preload="none" data-keys="nika architetti paolo" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_3I8Z3iNNCN9kim46g9nUlUr8Aiw/hf_20261017_085235_128643fb-8cee-4b61-bbae-b0be557951eb.mp4"></video>
+  <video muted loop playsinline preload="none" data-keys="spazio ekphrasis luce potere" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_3I8Z3iNNCN9kim46g9nUlUr8Aiw/hf_20261017_085235_0c0e0686-a363-4a0f-ad70-fc00cc37096d.mp4"></video>
+  <video muted loop playsinline preload="none" data-keys="marmi colonne ambone significato" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_3I8Z3iNNCN9kim46g9nUlUr8Aiw/hf_20261017_085235_1b7be308-f718-4e95-a8a0-ffdf7ffd4c53.mp4"></video>
+  <video muted loop playsinline preload="none" data-keys="cupola decorazione mosaico perche" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_3I8Z3iNNCN9kim46g9nUlUr8Aiw/hf_20261017_085235_58a91464-7a14-4318-ae3f-778e91115246.mp4"></video>
 </div>
 <div class="veil" aria-hidden="true"></div>
 
@@ -238,7 +235,7 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
 
   <section class="slide" data-key="spazio" data-title="Uno spazio nuovo">
     <article class="panel">
-      <p class="eyebrow">3 · Spaccato della navata</p>
+      <p class="eyebrow">3 · Lo spazio interno</p>
       <h2>Uno spazio nuovo</h2>
       <p>Santa Sofia unisce due concezioni architettoniche:</p>
       <div class="chain"><span>sviluppo longitudinale</span><b>+</b><span>grande spazio centrale cupolato</span></div>
@@ -256,11 +253,6 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
       <p>La cupola è il centro visivo di Santa Sofia. Alla sua base si apre una corona di circa <strong>quaranta finestre</strong>.</p>
       <p>La luce che entra da queste aperture rende meno visibile il punto in cui la cupola poggia sulla struttura sottostante. Per questo, osservata dal basso, la cupola sembra quasi <strong>sospesa nello spazio</strong>.</p>
       <p>La cupola originaria subì gravi danni e crollò nel <strong>558 d.C.</strong> Venne poi ricostruita da <strong>Isidoro il Giovane</strong>, con una forma più alta rispetto a quella iniziale.</p>
-      <div class="controls" role="group" aria-label="Fasi della cupola">
-        <button type="button" id="dome-537" aria-pressed="false">Cupola del 537</button>
-        <button type="button" id="dome-558" aria-pressed="true">Crollo del 558 e ricostruzione</button>
-      </div>
-      <p class="status" id="dome-status" aria-live="polite">Nel modello: la cupola ricostruita da Isidoro il Giovane, più alta.</p>
     </article>
   </section>
 
@@ -294,7 +286,6 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
       <ul class="tesserae"><li>onde</li><li>fiumi</li><li>prati</li><li>fiori</li><li>paesaggi</li></ul>
       <p>I materiali arrivano da diverse zone dell’Impero e contribuiscono a trasformare Santa Sofia in uno spazio ricchissimo di colori.</p>
       <p>Le superfici lucidate riflettono anche la luce, aumentando la sensazione di leggerezza dell’edificio.</p>
-      <p class="note">Nel modello: lastre aperte “a libro”, in cui la venatura si specchia e forma una figura.</p>
     </article>
   </section>
 
@@ -314,10 +305,6 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
       <p class="eyebrow">9 · «Luce e luci nella Megale Ekklesia»</p>
       <h2>La luce</h2>
       <p>La luce è uno dei temi più importanti del libro. <em>Megale Ekklesia</em> significa <strong>“Grande Chiesa”</strong>.</p>
-      <div class="controls" role="group" aria-label="Tipo di luce">
-        <button type="button" id="light-nat" aria-pressed="true">Luce naturale</button>
-        <button type="button" id="light-art" aria-pressed="false">Luce artificiale</button>
-      </div>
       <h3>Luce naturale</h3>
       <p>Entra attraverso le numerose finestre e viene riflessa da marmi, superfici dorate, mosaici ed elementi metallici. La luce modifica continuamente la percezione dello spazio.</p>
       <h3>Luce artificiale</h3>
@@ -347,7 +334,6 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
       <h3>La recinzione presbiteriale</h3>
       <p>Separava la zona più sacra, riservata al clero e all’altare, dal resto dello spazio.</p>
       <p>Fobelli utilizza la descrizione di Paolo per cercare di ricostruire questi elementi oggi scomparsi.</p>
-      <p class="note">Nel modello sono tracciati in oro, come ipotesi ricostruttiva.</p>
     </article>
   </section>
 
@@ -392,7 +378,6 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
         <li><span>trasformazioni moderne</span><span>1934 · 2020</span></li>
       </ul>
       <p>Per questo la <em>Descrizione</em> di Paolo Silenziario è fondamentale. Ci permette di conoscere anche elementi che oggi <strong>non possiamo più vedere</strong>.</p>
-      <p class="note">Nel modello compaiono in trasparenza i minareti, aggiunti in età ottomana.</p>
     </article>
   </section>
 
@@ -424,9 +409,7 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
   <span class="counter" id="counter" aria-live="polite">1 / 17</span>
   <button type="button" class="tool" id="fullscreen">Schermo intero</button>
 </div>
-<div id="tags" aria-hidden="true"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function () {
   'use strict';
@@ -493,7 +476,7 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
     } catch (err) { /* fullscreen not available here */ }
   });
 
-  /* ---------- Animated photo backgrounds: shown on the sections they belong to, the 3D model elsewhere ---------- */
+  /* ---------- Animated backgrounds: each section crossfades to its clip ---------- */
   const film = document.getElementById('film');
   const clips = Array.from(film.querySelectorAll('video')).map((el) => {
     el.addEventListener('error', () => { el.dataset.failed = '1'; showFilm(lastKey); }, true);
@@ -582,634 +565,7 @@ figure.mosaic figcaption { font-family: var(--f-display); font-size: 1.2rem; col
     }
   })();
 
-  /* ---------- 3D scene ---------- */
-  let gl = null;
-  try {
-    if (typeof THREE !== 'undefined') {
-      gl = new THREE.WebGLRenderer({ canvas: document.getElementById('scene'), antialias: true, powerPreference: 'high-performance' });
-    }
-  } catch (err) { gl = null; }
-  if (!gl) {
-    document.documentElement.classList.add('no-webgl');
-    update();
-    return;
-  }
-
-  const renderer = gl;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#17121d');
-  scene.fog = new THREE.Fog('#17121d', 45, 150);
-  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 500);
-
-  const A = 4;       // half side of the central square = dome radius
-  const Y0 = 6;      // springing of the great arches
-  const DOME_BASE = Y0 + A;
-
-  const hemi = new THREE.HemisphereLight(0xfff2dc, 0x2a2030, 0.7);
-  const sun = new THREE.DirectionalLight(0xffe0b0, 1.3);
-  sun.position.set(30, 40, 18);
-  const fill = new THREE.DirectionalLight(0x8090c0, 0.25);
-  fill.position.set(-30, 10, -20);
-  const domeLight = new THREE.PointLight(0xffc870, 0, 26, 2);
-  domeLight.position.set(0, DOME_BASE - 1, 0);
-  const lampLight = new THREE.PointLight(0xffa040, 0, 34, 2);
-  lampLight.position.set(0, 3.6, 0);
-  scene.add(hemi, sun, fill, domeLight, lampLight);
-
-  function canvasTex(w, h, draw, srgb) {
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    draw(c.getContext('2d'), w, h, c);
-    const t = new THREE.CanvasTexture(c);
-    if (srgb !== false) t.encoding = THREE.sRGBEncoding;
-    t.anisotropy = 4;
-    return t;
-  }
-
-  // gold mosaic for the inside of domes: tesserae, 40 ribs, a geometric band above the windows
-  const goldTex = canvasTex(1024, 512, (g, w, h) => {
-    const r = rng(7), s = 8;
-    g.fillStyle = '#3a2a12'; g.fillRect(0, 0, w, h);
-    for (let y = 0; y < h; y += s) for (let x = 0; x < w; x += s) {
-      g.fillStyle = 'hsl(' + (38 + r() * 9) + ',' + (62 + r() * 20) + '%,' + (40 + r() * 24) + '%)';
-      g.fillRect(x + r(), y + r(), s - 1.5, s - 1.5);
-    }
-    g.fillStyle = 'rgba(80, 50, 15, 0.5)';
-    for (let i = 0; i < 40; i++) g.fillRect(i * w / 40 - 3, 0, 6, h);
-    g.fillStyle = '#2a4c8a'; g.fillRect(0, h * 0.86, w, 10); g.fillRect(0, h * 0.95, w, 8);
-    g.fillStyle = '#8c3552';
-    for (let x = 0; x < w; x += 24) { g.beginPath(); g.moveTo(x, h * 0.95); g.lineTo(x + 12, h * 0.885); g.lineTo(x + 24, h * 0.95); g.closePath(); g.fill(); }
-  });
-  // cross in a medallion at the apex
-  const crossTex = canvasTex(512, 512, (g, w, h) => {
-    const r = rng(3);
-    g.fillStyle = '#c99a3f'; g.fillRect(0, 0, w, h);
-    for (let y = 0; y < h; y += 8) for (let x = 0; x < w; x += 8) {
-      g.fillStyle = 'hsl(' + (40 + r() * 8) + ',70%,' + (45 + r() * 22) + '%)'; g.fillRect(x, y, 6.5, 6.5);
-    }
-    g.lineWidth = 26; g.strokeStyle = '#2a4c8a'; g.beginPath(); g.arc(w / 2, h / 2, w * 0.43, 0, 7); g.stroke();
-    g.lineWidth = 8; g.strokeStyle = '#8c3552'; g.beginPath(); g.arc(w / 2, h / 2, w * 0.36, 0, 7); g.stroke();
-    g.fillStyle = '#1f3a72';
-    const c = w / 2, arm = w * 0.27, t = w * 0.065;
-    g.fillRect(c - t, c - arm, t * 2, arm * 2); g.fillRect(c - arm, c - t, arm * 2, t * 2);
-    g.fillStyle = '#f4d690'; g.beginPath(); g.arc(c, c, t * 0.9, 0, 7); g.fill();
-  });
-  // tympanum: stone with two rows of arched windows; a second texture marks the glowing panes
-  function tympanumDraw(glowOnly) {
-    return (g, w, h) => {
-      g.fillStyle = glowOnly ? '#000' : '#d3c09c'; g.fillRect(0, 0, w, h);
-      if (!glowOnly) { const r = rng(5); for (let i = 0; i < 400; i++) { g.fillStyle = 'rgba(120,95,60,' + (r() * 0.12) + ')'; g.fillRect(r() * w, r() * h, 30 + r() * 40, 8 + r() * 10); } }
-      g.fillStyle = glowOnly ? '#fff' : '#ffe2a0';
-      function row(n, yTop, wh, ww) {
-        const span = w * 0.6, x0 = w / 2 - span / 2;
-        for (let i = 0; i < n; i++) {
-          const x = x0 + (i + 0.5) * span / n - ww / 2;
-          g.fillRect(x, yTop + ww / 2, ww, wh); g.beginPath(); g.arc(x + ww / 2, yTop + ww / 2, ww / 2, Math.PI, 0); g.fill();
-        }
-      }
-      row(5, h * 0.28, h * 0.12, w * 0.05);
-      row(7, h * 0.5, h * 0.11, w * 0.04);
-    };
-  }
-  const tympMap = canvasTex(512, 512, tympanumDraw(false));
-  const tympGlow = canvasTex(512, 512, tympanumDraw(true));
-  // openwork capital: deep drilled ground with leaf lace and a block monogram
-  const capitalTex = canvasTex(256, 256, (g, w, h) => {
-    const r = rng(9);
-    g.fillStyle = '#1a130b'; g.fillRect(0, 0, w, h);
-    g.fillStyle = '#ece3cf';
-    for (let y = 8; y < h; y += 18) for (let x = (y / 18 % 2) * 9; x < w; x += 18) {
-      g.beginPath(); g.ellipse(x, y, 7, 4, r() * 3, 0, 7); g.fill();
-    }
-    g.fillStyle = '#1a130b';
-    for (let i = 0; i < 160; i++) { g.beginPath(); g.arc(r() * w, r() * h, 1.6, 0, 7); g.fill(); }
-    g.fillStyle = '#ece3cf'; g.beginPath(); g.arc(w / 2, h / 2, 52, 0, 7); g.fill();
-    g.strokeStyle = '#1a130b'; g.lineWidth = 4; g.beginPath(); g.arc(w / 2, h / 2, 46, 0, 7); g.stroke();
-    g.fillStyle = '#1a130b'; g.font = 'bold 30px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText('ΙΟ', w / 2, h / 2 - 15); g.fillText('ΥϹ', w / 2, h / 2 + 17);
-  });
-
-  function marbleTex(seed, base, veins, o) {
-    return canvasTex(512, 512, (g, w, h, c) => {
-      const r = rng(seed);
-      const half = o.book ? w / 2 : w;
-      g.fillStyle = base; g.fillRect(0, 0, w, h);
-      for (let i = 0; i < 70; i++) {
-        g.fillStyle = veins[i % veins.length]; g.globalAlpha = 0.04 + r() * 0.08;
-        g.beginPath(); g.ellipse(r() * half, r() * h, 20 + r() * 100, 10 + r() * 50, r() * 3, 0, 7); g.fill();
-      }
-      for (let i = 0; i < (o.n || 0); i++) {
-        g.strokeStyle = veins[(i * 7) % veins.length]; g.globalAlpha = 0.25 + r() * 0.6; g.lineWidth = 0.5 + r() * 2.4 * (o.w || 1);
-        let x = r() * half, y = r() * h, ang = (o.flow || 0) + (r() - 0.5) * 1.4;
-        g.beginPath(); g.moveTo(x, y);
-        for (let k = 0; k < 46; k++) { ang += (r() - 0.5) * 0.7; x += Math.cos(ang) * 9; y += Math.sin(ang) * 9; g.lineTo(x, y); }
-        g.stroke();
-      }
-      if (o.specks) {
-        for (let i = 0; i < o.specks; i++) { g.fillStyle = veins[i % veins.length]; g.globalAlpha = 0.5 + r() * 0.5; g.fillRect(r() * half, r() * h, 1 + r() * 3, 1 + r() * 3); }
-      }
-      g.globalAlpha = 1;
-      if (o.book) {
-        const tmp = document.createElement('canvas'); tmp.width = w / 2; tmp.height = h;
-        tmp.getContext('2d').drawImage(c, 0, 0, w / 2, h, 0, 0, w / 2, h);
-        g.save(); g.translate(w, 0); g.scale(-1, 1); g.drawImage(tmp, 0, 0); g.restore();
-      }
-    });
-  }
-  const marbles = [
-    { name: 'Proconneso · bianco venato', tex: marbleTex(21, '#e6e3dc', ['#7f838a', '#a9acb2', '#c9cbcf'], { n: 60, book: true, flow: 1.2 }) },
-    { name: 'Tessaglia · verde', tex: marbleTex(22, '#2d4838', ['#d5ddd2', '#0e1d15', '#5d7c66'], { n: 50, specks: 500, book: true, flow: 0.4 }) },
-    { name: 'Egitto · porfido rosso', tex: marbleTex(23, '#6a2733', ['#e7b8c2', '#3d121a', '#f2dde0'], { n: 0, specks: 5000 }) },
-    { name: 'Numidia · giallo', tex: marbleTex(24, '#d3ae68', ['#a6542e', '#f0d9a0', '#8a4a20'], { n: 70, book: true, flow: 2.0 }) },
-    { name: 'Frigia · rosa e viola', tex: marbleTex(25, '#eadad5', ['#9c3b55', '#6e2440', '#c88a98'], { n: 80, w: 1.6, book: true, flow: 0.9 }) },
-  ];
-
-  const M = {
-    stone: new THREE.MeshStandardMaterial({ color: 0xbfa985, roughness: 0.9 }),
-    stoneWarm: new THREE.MeshStandardMaterial({ color: 0xa48c6b, roughness: 0.92 }),
-    lead: new THREE.MeshStandardMaterial({ color: 0x5c636d, roughness: 0.5, metalness: 0.35 }),
-    goldIn: new THREE.MeshStandardMaterial({ map: goldTex, emissive: 0xffffff, emissiveMap: goldTex, emissiveIntensity: 0.3, roughness: 0.4, metalness: 0.2, side: THREE.BackSide }),
-    goldBoth: new THREE.MeshStandardMaterial({ map: goldTex, emissive: 0xffffff, emissiveMap: goldTex, emissiveIntensity: 0.3, roughness: 0.4, metalness: 0.2, side: THREE.DoubleSide }),
-    cross: new THREE.MeshStandardMaterial({ map: crossTex, emissive: 0xffffff, emissiveMap: crossTex, emissiveIntensity: 0.3, roughness: 0.4, side: THREE.DoubleSide }),
-    glow: new THREE.MeshBasicMaterial({ color: 0xffd27a, side: THREE.DoubleSide }),
-    tymp: new THREE.MeshStandardMaterial({ map: tympMap, emissive: 0xffd590, emissiveMap: tympGlow, emissiveIntensity: 0.6, roughness: 0.9, side: THREE.DoubleSide }),
-    floor: new THREE.MeshStandardMaterial({ map: marbles[0].tex, roughness: 0.35, color: 0xd0ccc4 }),
-    ground: new THREE.MeshStandardMaterial({ color: 0x3a2f2a, roughness: 1 }),
-    verde: new THREE.MeshStandardMaterial({ map: marbles[1].tex, roughness: 0.3 }),
-    capital: new THREE.MeshStandardMaterial({ map: capitalTex, roughness: 0.6 }),
-  };
-  M.floor.map.wrapS = M.floor.map.wrapT = THREE.RepeatWrapping;
-  M.floor.map.repeat.set(5, 5);
-  const goldMats = [M.goldIn, M.goldBoth, M.cross];
-
-  function mesh(geo, mat, x, y, z, parent) {
-    const m = new THREE.Mesh(geo, mat); m.position.set(x || 0, y || 0, z || 0);
-    (parent || scene).add(m); return m;
-  }
-
-  // ground and nave floor
-  const ground = mesh(new THREE.CircleGeometry(160, 64), M.ground, 0, -0.02, 0);
-  ground.rotation.x = -Math.PI / 2;
-  const floor = mesh(new THREE.PlaneGeometry(4.6 * A, 4.4 * A), M.floor, 0, 0.01, 0);
-  floor.rotation.x = -Math.PI / 2;
-
-  /* --- Structure: piers, arches, pendentives (explodable) --- */
-  const parts = { piers: new THREE.Group(), arches: new THREE.Group(), pend: new THREE.Group() };
-  Object.values(parts).forEach((g) => scene.add(g));
-  [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([sx, sz]) => mesh(new THREE.BoxGeometry(1.5, Y0, 1.5), M.stoneWarm, sx * A, Y0 / 2, sz * A, parts.piers));
-  const archGeo = new THREE.TorusGeometry(A, 0.38, 10, 48, Math.PI);
-  [1, -1].forEach((s) => {
-    mesh(archGeo, M.stone, 0, Y0, s * A, parts.arches);
-    const e = mesh(archGeo, M.stone, s * A, Y0, 0, parts.arches); e.rotation.y = Math.PI / 2;
-  });
-  (function pendentives() {
-    const segT = 160, segR = 10, pos = [], uv = [], idx = [];
-    for (let i = 0; i <= segT; i++) {
-      const t = i / segT * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
-      const rmax = A / Math.max(Math.abs(c), Math.abs(s));
-      for (let j = 0; j <= segR; j++) {
-        const rr = A + (rmax - A) * j / segR;
-        pos.push(rr * c, Math.sqrt(Math.max(0, 2 * A * A - rr * rr)), rr * s);
-        uv.push(i / segT * 4, 0.7 + 0.3 * j / segR);
-      }
-    }
-    for (let i = 0; i < segT; i++) for (let j = 0; j < segR; j++) {
-      const a = i * (segR + 1) + j, b = (i + 1) * (segR + 1) + j;
-      idx.push(a, b, a + 1, b, b + 1, a + 1);
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geo.setIndex(idx); geo.computeVertexNormals();
-    mesh(geo, M.goldBoth, 0, Y0, 0, parts.pend);
-  })();
-
-  /* --- Dome: 40 ribs with windows between, lead shell, gold inside, cross at apex --- */
-  const domeGroup = new THREE.Group(); domeGroup.position.y = DOME_BASE; scene.add(domeGroup);
-  const ribGroup = new THREE.Group(); domeGroup.add(ribGroup);
-  const ribW = 2 * Math.PI * A / 40 * 0.42;
-  for (let i = 0; i < 40; i++) {
-    const t = i / 40 * Math.PI * 2;
-    const rib = mesh(new THREE.BoxGeometry(ribW, 0.75, 0.7), M.stone, Math.cos(t) * (A + 0.1), 0.375, Math.sin(t) * (A + 0.1), ribGroup);
-    rib.rotation.y = -t + Math.PI / 2;
-  }
-  const glowRing = mesh(new THREE.CylinderGeometry(A - 0.02, A - 0.02, 0.62, 80, 1, true), M.glow, 0, 0.37, 0, ribGroup);
-  const shell = new THREE.Group(); shell.position.y = 0.75; domeGroup.add(shell);
-  mesh(new THREE.SphereGeometry(A + 0.14, 64, 24, 0, Math.PI * 2, 0, Math.PI / 2), M.lead, 0, 0, 0, shell);
-  mesh(new THREE.SphereGeometry(A, 64, 24, 0, Math.PI * 2, 0, Math.PI / 2), M.goldIn, 0, 0, 0, shell);
-  const apex = mesh(new THREE.CircleGeometry(A * 0.36, 48), M.cross, 0, A - 0.06, 0, shell);
-  apex.rotation.x = Math.PI / 2;
-  let domeH = 0.72, domeHCur = 0.72;
-
-  /* --- Semidomes and exedrae (lead outside, gold inside) --- */
-  const semis = new THREE.Group(); scene.add(semis);
-  function halfDome(r, alpha, x, y, z) {
-    const g = new THREE.Group(); g.position.set(x, y, z);
-    const phi0 = Math.PI / 2 - alpha;
-    mesh(new THREE.SphereGeometry(r + 0.12, 40, 16, phi0, Math.PI, 0, Math.PI / 2), M.lead, 0, 0, 0, g);
-    mesh(new THREE.SphereGeometry(r, 40, 16, phi0, Math.PI, 0, Math.PI / 2), M.goldBoth, 0, 0, 0, g);
-    semis.add(g); return g;
-  }
-  [1, -1].forEach((s) => {
-    halfDome(A, s > 0 ? 0 : Math.PI, s * A, Y0, 0);
-    [1, -1].forEach((side) => {
-      const ang = side * Math.PI / 4;
-      const cx = s * A + s * A * Math.cos(ang), cz = A * Math.sin(ang);
-      const alpha = Math.atan2(cz, cx - s * A);
-      halfDome(A * 0.42, alpha, cx, Y0 - 0.5, cz);
-    });
-  });
-  halfDome(A * 0.42, 0, 2 * A, Y0 - 0.9, 0); // apse
-
-  /* --- North and south tympana with windows --- */
-  const tymp = new THREE.Group(); scene.add(tymp);
-  [1, -1].forEach((s) => mesh(new THREE.CircleGeometry(A - 0.05, 48, 0, Math.PI), M.tymp, 0, Y0, s * A, tymp));
-
-  /* --- Exterior masses --- */
-  const exterior = new THREE.Group(); scene.add(exterior);
-  const blockH = Y0 - 0.6;
-  mesh(new THREE.BoxGeometry(4.6 * A, blockH, 4.4 * A), M.stoneWarm, 0, blockH / 2, 0, exterior);
-  [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([sx, sz]) => {
-    mesh(new THREE.BoxGeometry(1.8, A * 0.8, 1.8), M.stoneWarm, sx * A, Y0 + A * 0.4, sz * A, exterior);
-    mesh(new THREE.BoxGeometry(2.4, Y0 + 2.4, 3.2), M.stoneWarm, sx * A * 0.95, (Y0 + 2.4) / 2, sz * (2.2 * A + 1.6), exterior);
-  });
-  mesh(new THREE.BoxGeometry(2.4, blockH * 0.82, 4.4 * A), M.stone, -(2.3 * A + 1.2), blockH * 0.41, 0, exterior);
-  mesh(new THREE.BoxGeometry(1.8, blockH * 0.6, 4.0 * A), M.stoneWarm, -(2.3 * A + 3.3), blockH * 0.3, 0, exterior);
-
-  /* --- Colonnades with openwork capitals (north and south) --- */
-  const columns = new THREE.Group(); scene.add(columns);
-  const capitalAnchors = [];
-  [1, -1].forEach((s) => {
-    const z = s * A;
-    [-0.6, -0.2, 0.2, 0.6].forEach((f) => {
-      const x = f * A;
-      mesh(new THREE.BoxGeometry(0.7, 0.3, 0.7), M.stone, x, 0.15, z, columns);
-      mesh(new THREE.CylinderGeometry(0.22, 0.26, 3.2, 20), M.verde, x, 1.9, z, columns);
-      const cap = mesh(new THREE.CylinderGeometry(0.48, 0.24, 0.55, 4, 1), M.capital, x, 3.78, z, columns);
-      cap.rotation.y = Math.PI / 4;
-      mesh(new THREE.BoxGeometry(0.85, 0.16, 0.85), M.stone, x, 4.13, z, columns);
-      if (s < 0) capitalAnchors.push(new THREE.Vector3(x, 3.78, z));
-    });
-    [-0.8, -0.4, 0, 0.4, 0.8].forEach((f) => {
-      const t = mesh(new THREE.TorusGeometry(0.8, 0.1, 6, 20, Math.PI), M.stone, f * A, 4.21, z, columns);
-      t.scale.set(f === -0.8 || f === 0.8 ? 0.55 : 1, 0.7, 1);
-    });
-    for (let k = 0; k < 6; k++) {
-      const x = (-0.75 + k * 0.3) * A;
-      mesh(new THREE.CylinderGeometry(0.14, 0.16, 1.3, 14), M.verde, x, 5.0, z, columns);
-      const c2 = mesh(new THREE.CylinderGeometry(0.28, 0.15, 0.32, 4, 1), M.capital, x, 5.8, z, columns);
-      c2.rotation.y = Math.PI / 4;
-    }
-  });
-
-  /* --- Floating marble slabs (section 7) --- */
-  const slabs = new THREE.Group(); scene.add(slabs);
-  const slabAnchors = [];
-  const slabCenter = new THREE.Vector3(-3.4, 5, 1.6), slabCam = new THREE.Vector3(-11, 4.5, 9);
-  marbles.forEach((mb, i) => {
-    const mat = new THREE.MeshStandardMaterial({ map: mb.tex, emissive: 0xffffff, emissiveMap: mb.tex, emissiveIntensity: 0.25, roughness: 0.25, side: THREE.DoubleSide });
-    const k = i - 2;
-    const p = slabCenter.clone().add(new THREE.Vector3(k * 2.05, Math.abs(k) * -0.25, k * 2.05).multiplyScalar(0.85));
-    p.add(new THREE.Vector3(1, 0, -1).multiplyScalar(Math.abs(k) * -0.45));
-    const s = mesh(new THREE.PlaneGeometry(1.5, 2.3), mat, p.x, p.y, p.z, slabs);
-    s.lookAt(slabCam);
-    s.userData.base = p.clone(); s.userData.i = i;
-    slabAnchors.push({ mesh: s, name: mb.name });
-  });
-
-  /* --- Ekphrasis words orbiting the dome --- */
-  const words = new THREE.Group(); words.visible = false; scene.add(words);
-  function buildWords() {
-    ['spazio', 'luce', 'colore', 'marmi', 'oro', 'argento'].forEach((w, i) => {
-      const tex = canvasTex(512, 128, (g, cw, ch) => {
-        g.font = '74px Forum, Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.shadowColor = 'rgba(255, 190, 90, 0.9)'; g.shadowBlur = 22;
-        g.fillStyle = i === 5 ? '#e6ecf2' : '#f4d690'; g.fillText(w, cw / 2, ch / 2);
-      });
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
-      sp.scale.set(6.4, 1.6, 1); sp.userData.i = i;
-      words.add(sp);
-    });
-    registerFade('words', words);
-  }
-
-  /* --- Lamps: rings of polykandela on chains --- */
-  const lamps = new THREE.Group(); scene.add(lamps);
-  const glowSprite = canvasTex(64, 64, (g, w) => {
-    const gr = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
-    gr.addColorStop(0, 'rgba(255,240,200,1)'); gr.addColorStop(0.25, 'rgba(255,190,90,0.8)'); gr.addColorStop(1, 'rgba(255,140,40,0)');
-    g.fillStyle = gr; g.fillRect(0, 0, w, w);
-  });
-  (function buildLamps() {
-    const pts = [], chain = [];
-    [[A * 0.92, 36, 3.3], [A * 0.62, 24, 3.6], [A * 0.32, 12, 3.9]].forEach(([r, n, y]) => {
-      for (let i = 0; i < n; i++) { const t = i / n * Math.PI * 2; pts.push(Math.cos(t) * r, y, Math.sin(t) * r); }
-      for (let i = 0; i < 6; i++) { const t = i / 6 * Math.PI * 2; chain.push(Math.cos(t) * r, y, Math.sin(t) * r, Math.cos(t) * r * 0.85, DOME_BASE + 0.2, Math.sin(t) * r * 0.85); }
-    });
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    lamps.add(new THREE.Points(g, new THREE.PointsMaterial({ map: glowSprite, size: 1.1, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffcf88 })));
-    const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(chain, 3));
-    lamps.add(new THREE.LineSegments(cg, new THREE.LineBasicMaterial({ color: 0x9a8150, transparent: true })));
-  })();
-
-  /* --- Embers for the Nika riot --- */
-  const EMBERS = 360;
-  const emberGeo = new THREE.BufferGeometry();
-  const emberPos = new Float32Array(EMBERS * 3), emberVel = new Float32Array(EMBERS);
-  (function () { const r = rng(17); for (let i = 0; i < EMBERS; i++) { emberPos[i * 3] = (r() - 0.5) * 50; emberPos[i * 3 + 1] = r() * 26; emberPos[i * 3 + 2] = (r() - 0.5) * 50; emberVel[i] = 1 + r() * 2.5; } })();
-  emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPos, 3));
-  const embers = new THREE.Points(emberGeo, new THREE.PointsMaterial({ map: glowSprite, size: 0.7, color: 0xff7a30, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
-  const emberGroup = new THREE.Group(); emberGroup.add(embers); scene.add(emberGroup);
-
-  /* --- Lost furnishings (ambo, solea, templon, ciborium) and Ottoman minarets, drawn as ghosts --- */
-  function ghost(color) {
-    return { line: new THREE.LineBasicMaterial({ color, transparent: true }), fill: new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }) };
-  }
-  function ghostMesh(geo, gm, x, y, z, parent) {
-    const g = new THREE.Group(); g.position.set(x, y, z);
-    g.add(new THREE.Mesh(geo, gm.fill));
-    g.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 20), gm.line));
-    parent.add(g); return g;
-  }
-  const furnish = new THREE.Group(); scene.add(furnish);
-  const gold = ghost(0xf4d690);
-  // ambo: oval platform on eight columns, stairs east and west
-  const ambo = new THREE.Group(); ambo.position.set(0.6, 0, 0); furnish.add(ambo);
-  const plat = ghostMesh(new THREE.CylinderGeometry(1.3, 1.3, 0.35, 28), gold, 0, 2.2, 0, ambo); plat.scale.z = 0.62;
-  ghostMesh(new THREE.CylinderGeometry(1.32, 1.32, 0.9, 28, 1, true), gold, 0, 2.8, 0, ambo).scale.z = 0.62;
-  for (let i = 0; i < 8; i++) { const t = i / 8 * Math.PI * 2; ghostMesh(new THREE.CylinderGeometry(0.08, 0.08, 2.05, 8), gold, Math.cos(t) * 1.05, 1.02, Math.sin(t) * 0.62, ambo); }
-  [-1, 1].forEach((s) => { for (let k = 0; k < 5; k++) ghostMesh(new THREE.BoxGeometry(0.42, 0.42 * (k + 1), 0.8), gold, s * (1.5 + (4 - k) * 0.42), 0.21 * (k + 1), 0, ambo); });
-  // solea toward the sanctuary
-  [-0.55, 0.55].forEach((z) => ghostMesh(new THREE.BoxGeometry(A * 0.52 - 1.0, 0.8, 0.08), gold, 3.6 + (A * 0.52 - 1.0) / 2 - 0.4, 0.4, z, furnish));
-  // templon: parapet, columns and architrave on three sides
-  const tx0 = A * 0.55, tx1 = A * 1.75, tz = A * 0.62;
-  ghostMesh(new THREE.BoxGeometry(0.1, 1.0, tz * 2), gold, tx0, 0.5, 0, furnish);
-  ghostMesh(new THREE.BoxGeometry(0.12, 0.2, tz * 2), gold, tx0, 3.3, 0, furnish);
-  [-1, 1].forEach((s) => {
-    ghostMesh(new THREE.BoxGeometry(tx1 - tx0, 1.0, 0.1), gold, (tx0 + tx1) / 2, 0.5, s * tz, furnish);
-    ghostMesh(new THREE.BoxGeometry(tx1 - tx0, 0.2, 0.12), gold, (tx0 + tx1) / 2, 3.3, s * tz, furnish);
-  });
-  for (let k = 0; k <= 6; k++) ghostMesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), gold, tx0, 1.6, -tz + k * tz * 2 / 6, furnish);
-  [-1, 1].forEach((s) => { for (let k = 1; k <= 5; k++) ghostMesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), gold, tx0 + k * (tx1 - tx0) / 5, 1.6, s * tz, furnish); });
-  // altar and ciborium
-  const cib = new THREE.Vector3(A * 1.35, 0, 0);
-  ghostMesh(new THREE.BoxGeometry(1.0, 1.0, 0.7), gold, cib.x, 0.5, 0, furnish);
-  [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([a, b]) => ghostMesh(new THREE.CylinderGeometry(0.07, 0.07, 2.6, 8), gold, cib.x + a * 0.8, 1.3, b * 0.8, furnish));
-  ghostMesh(new THREE.ConeGeometry(1.2, 1.1, 8), gold, cib.x, 3.15, 0, furnish);
-
-  const minarets = new THREE.Group(); scene.add(minarets);
-  const ott = ghost(0xe49ab8);
-  [[1.25, 1.18], [1.25, -1.18], [-1.25, 1.18], [-1.25, -1.18]].forEach(([fx, fz]) => {
-    const x = fx * 2 * A, z = fz * 2 * A;
-    ghostMesh(new THREE.CylinderGeometry(0.42, 0.5, 19, 10), ott, x, 9.5, z, minarets);
-    ghostMesh(new THREE.CylinderGeometry(0.7, 0.7, 0.3, 10), ott, x, 13.5, z, minarets);
-    ghostMesh(new THREE.ConeGeometry(0.46, 3.4, 10), ott, x, 20.7, z, minarets);
-  });
-
-  /* ---------- Fading groups ---------- */
-  const fades = {};
-  function registerFade(key, group) {
-    const mats = [];
-    group.traverse((o) => {
-      if (!o.material) return;
-      o.material = o.material.clone();
-      o.material.transparent = true;
-      o.material.userData.baseOpacity = o.material.opacity;
-      mats.push(o.material);
-    });
-    fades[key] = { group, mats, cur: 0 };
-  }
-  registerFade('exterior', exterior);
-  registerFade('semis', semis);
-  registerFade('tymp', tymp);
-  registerFade('columns', columns);
-  registerFade('slabs', slabs);
-  registerFade('lamps', lamps);
-  registerFade('furnish', furnish);
-  registerFade('minarets', minarets);
-  registerFade('embers', emberGroup);
-  fades.exterior.cur = 1; fades.semis.cur = 1; fades.tymp.cur = 1;
-  // gold materials were cloned inside groups: collect them all so the gold glow drives every surface
-  [semis].forEach((g) => g.traverse((o) => { if (o.material && o.material.emissiveMap === goldTex) goldMats.push(o.material); }));
-  slabs.traverse((o) => { if (o.material) goldMats.push({ isSlab: true, m: o.material }); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(buildWords, buildWords); else buildWords();
-
-  /* ---------- States per slide ---------- */
-  const SHOW0 = { exterior: 1, semis: 1, tymp: 1, columns: 0, slabs: 0, words: 0, lamps: 0, furnish: 0, minarets: 0, embers: 0 };
-  const L0 = { bg: '#17121d', hemi: 0.45, sun: 1.0, sunColor: '#ffe0b0', glow: 0.7, gold: 0.3, lamps: 0, exposure: 0.92 };
-  const S = {
-    intro:       { cam: [27, 13, 27], tgt: [0, 6.5, 0], orbit: 0.06, ext: true, side: 'left' },
-    nika:        { cam: [26, 9, -26], tgt: [0, 5, 0], orbit: 0.03, ext: true, show: { embers: 1 }, light: { bg: '#2a0f0d', hemi: 0.35, sun: 1.1, sunColor: '#ff6a3a', glow: 0.9, exposure: 0.95 } },
-    architetti:  { cam: [21, 12, 21], tgt: [0, 9, 0], orbit: 0.05, explode: 1, tags: 'struct', show: { exterior: 0, semis: 0, tymp: 0 }, light: { bg: '#141826', glow: 1.0 } },
-    spazio:      { cam: [-17, 3.2, 1.5], tgt: [8, 8, 0], tags: 'space', show: { exterior: 0, columns: 1 }, light: { bg: '#141018', hemi: 0.55, glow: 1.1, gold: 0.4 } },
-    cupola:      { cam: [5.5, 1.8, 5.5], tgt: [0, 14, 0], orbit: 0.04, tags: 'dome', show: { exterior: 0, columns: 1 }, light: { bg: '#0f0c14', hemi: 0.45, sun: 0.5, glow: 1.8, gold: 0.5 } },
-    paolo:       { cam: [38, 22, -14], tgt: [0, 8, 0], orbit: 0.025, ext: true, side: 'right', light: { bg: '#1a1424', sunColor: '#ffc89a', hemi: 0.55, glow: 1.0 } },
-    ekphrasis:   { cam: [25, 13, 21], tgt: [0, 8.5, 0], orbit: 0.04, ext: true, show: { words: 1 }, light: { bg: '#15111d', glow: 1.2 } },
-    marmi:       { cam: [-11, 4.5, 9], tgt: [-2.4, 5, 0.4], tags: 'slabs', side: 'right', show: { exterior: 0, slabs: 1, columns: 1 }, light: { bg: '#100d14', hemi: 0.8, gold: 0.35 } },
-    colonne:     { cam: [2.2, 3.6, -0.6], tgt: [-1.6, 4.2, -A], tags: 'cols', side: 'right', show: { exterior: 0, columns: 1 }, light: { bg: '#100d14', hemi: 0.9, sun: 1.0, glow: 1.0 } },
-    luce:        { cam: [-12, 3, -6], tgt: [0, 8.5, 0], show: { exterior: 0, columns: 1 }, light: { bg: '#100d14', hemi: 0.55, sun: 1.6, glow: 1.5, gold: 0.55 } },
-    luceArt:     { cam: [-12, 3, -6], tgt: [0, 7, 0], show: { exterior: 0, columns: 1, lamps: 1 }, light: { bg: '#07050a', hemi: 0.12, sun: 0.05, glow: 0.12, gold: 0.75, lamps: 1.6, exposure: 1.2 } },
-    decorazione: { cam: [-9, 3.5, 1], tgt: [3.5, 12, 0], orbit: 0.02, show: { exterior: 0, columns: 1 }, light: { bg: '#0f0c14', hemi: 0.5, glow: 1.3, gold: 0.7 } },
-    ambone:      { cam: [-3.6, 5.6, 1.6], tgt: [3.4, 1.0, 0], tags: 'furnish', side: 'right', show: { exterior: 0, columns: 0, furnish: 1 }, light: { bg: '#0f0c14', hemi: 0.5, glow: 1.0, gold: 0.4 } },
-    potere:      { cam: [-30, 8, 25], tgt: [0, 7, 0], orbit: 0.035, ext: true, light: { bg: '#1d0f1d', sunColor: '#d58ab4', hemi: 0.5, sun: 1.2, glow: 1.0 } },
-    mosaico:     { cam: [36, 4, 2], tgt: [0, 9, 0], ext: true, side: 'right', light: { bg: '#120d16', hemi: 0.35, sun: 0.8, sunColor: '#ffd8a0', glow: 1.1 } },
-    perche:      { cam: [33, 21, 30], tgt: [0, 8, 0], orbit: 0.03, ext: true, tags: 'minarets', show: { minarets: 1 }, light: { bg: '#161320', glow: 0.8 } },
-    significato: { cam: [22, 30, -22], tgt: [0, 7, 0], orbit: 0.03, ext: true, side: 'right', show: { words: 0.5 }, light: { bg: '#15111d', glow: 1.2 } },
-    fine:        { cam: [40, 20, 40], tgt: [0, 8, 0], orbit: 0.05, ext: true, light: { bg: '#1a1218', sunColor: '#ffcf8a', glow: 1.6, gold: 0.5 } },
-  };
-
-  let key = 'intro', lightMode = 'nat';
-  function targetState() {
-    const k = key === 'luce' && lightMode === 'art' ? 'luceArt' : key;
-    return S[k] || S.intro;
-  }
-  listeners.push((k) => { key = k; });
-
-  /* ---------- HTML tags projected from 3D ---------- */
-  const tagsBox = document.getElementById('tags');
-  const tags = [];
-  function addTag(group, text, posFn) {
-    const el = document.createElement('div'); el.className = 'tag'; el.textContent = text; tagsBox.appendChild(el);
-    tags.push({ group, el, posFn, cur: 0 });
-  }
-  const explodeOff = { piers: 0, arches: 1.4, pend: 2.8, dome: 4.6 };
-  let explode = 0;
-  addTag('struct', 'Piloni', () => new THREE.Vector3(A, Y0 * 0.45, A));
-  addTag('struct', 'Archi', () => new THREE.Vector3(0, DOME_BASE + explode * explodeOff.arches, A));
-  addTag('struct', 'Pennacchi', () => new THREE.Vector3(A * 0.9, Y0 + 1.4 + explode * explodeOff.pend, A * 0.9));
-  addTag('struct', 'Cupola', () => new THREE.Vector3(0, DOME_BASE + 0.75 + A * domeHCur + explode * explodeOff.dome, 0));
-  addTag('space', 'Semicupola', () => new THREE.Vector3(A * 1.5, Y0 + A * 0.7, 0));
-  addTag('space', 'Esedra', () => new THREE.Vector3(A * 1.9, Y0 + 0.4, -A * 0.9));
-  addTag('space', 'Gallerie', () => new THREE.Vector3(-A * 0.3, 5.4, A));
-  addTag('dome', 'circa 40 finestre', () => new THREE.Vector3(A * 0.7, DOME_BASE + 0.4, -A * 0.7));
-  addTag('dome', 'Pennacchio', () => new THREE.Vector3(-A * 0.95, Y0 + 1.6, -A * 0.95));
-  slabAnchors.forEach((s) => addTag('slabs', s.name, () => s.mesh.position.clone().add(new THREE.Vector3(0, -1.35, 0))));
-  addTag('cols', 'Capitello traforato', () => capitalAnchors[1].clone().add(new THREE.Vector3(0, 0.35, 0)));
-  addTag('cols', 'Monogramma imperiale', () => capitalAnchors[2].clone());
-  addTag('cols', 'Fusto in marmo verde', () => capitalAnchors[2].clone().add(new THREE.Vector3(0, -1.6, 0)));
-  addTag('furnish', 'Ambone', () => new THREE.Vector3(0.6, 3.6, 0));
-  addTag('furnish', 'Recinzione presbiteriale', () => new THREE.Vector3(tx0, 3.6, tz * 0.6));
-  addTag('furnish', 'Altare e ciborio', () => new THREE.Vector3(cib.x, 3.9, 0));
-  addTag('minarets', 'Minareti · età ottomana', () => new THREE.Vector3(-2.5 * A, 21, 2.36 * A));
-
-  /* ---------- Dome controls (section 4) ---------- */
-  const b537 = document.getElementById('dome-537'), b558 = document.getElementById('dome-558'), domeStatus = document.getElementById('dome-status');
-  let domeAnim = null;
-  b537.addEventListener('click', () => {
-    domeAnim = null; domeH = 0.5;
-    b537.setAttribute('aria-pressed', 'true'); b558.setAttribute('aria-pressed', 'false');
-    domeStatus.textContent = 'Nel modello: la cupola del 537, più ribassata.';
-  });
-  b558.addEventListener('click', () => {
-    b537.setAttribute('aria-pressed', 'false'); b558.setAttribute('aria-pressed', 'true');
-    domeStatus.textContent = '558: la cupola crolla. Isidoro il Giovane la ricostruisce più alta.';
-    if (reduced) { domeH = 0.72; return; }
-    domeAnim = { t0: performance.now(), from: domeHCur };
-  });
-
-  /* ---------- Light controls (section 9) ---------- */
-  const bNat = document.getElementById('light-nat'), bArt = document.getElementById('light-art');
-  function setLight(m) {
-    lightMode = m;
-    bNat.setAttribute('aria-pressed', String(m === 'nat')); bArt.setAttribute('aria-pressed', String(m === 'art'));
-  }
-  bNat.addEventListener('click', () => setLight('nat'));
-  bArt.addEventListener('click', () => setLight('art'));
-
-  /* ---------- Loop ---------- */
-  const cur = {
-    cam: new THREE.Vector3(27, 13, 27), tgt: new THREE.Vector3(0, 6.5, 0),
-    bg: new THREE.Color(L0.bg), sunColor: new THREE.Color(L0.sunColor),
-    hemi: L0.hemi, sun: L0.sun, glow: L0.glow, gold: L0.gold, lamps: 0, exposure: L0.exposure,
-    shiftX: 0, shiftY: 0,
-  };
-  let orbitAngle = 0;
-  const pointer = { x: 0, y: 0, sx: 0, sy: 0 };
-  window.addEventListener('pointermove', (e) => { pointer.x = e.clientX / window.innerWidth - 0.5; pointer.y = e.clientY / window.innerHeight - 0.5; }, { passive: true });
-
-  let W = 0, H = 0;
-  function resize() {
-    W = window.innerWidth; H = window.innerHeight;
-    renderer.setSize(W, H, false);
-    camera.aspect = W / H;
-    camera.fov = W / H < 0.8 ? 58 : 42;
-    camera.updateProjectionMatrix();
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  const tmpC = new THREE.Color(), v = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-  let last = performance.now();
-  function frame(now) {
-    const dt = Math.min(0.1, (now - last) / 1000); last = now;
-    const t = now / 1000;
-    const k = 1 - Math.exp(-dt * (reduced ? 8 : 2.1));
-    const st = targetState();
-    const show = Object.assign({}, SHOW0, st.show || {});
-    const L = Object.assign({}, L0, st.light || {});
-    const portrait = W / H < 0.8, mobile = W <= 760;
-
-    // camera
-    const tgtV = v.set(st.tgt[0], st.tgt[1], st.tgt[2]);
-    cur.tgt.lerp(tgtV, k);
-    const camT = new THREE.Vector3(st.cam[0], st.cam[1], st.cam[2]);
-    if (st.ext && portrait) camT.sub(tgtV).multiplyScalar(1.45).add(tgtV);
-    cur.cam.lerp(camT, k);
-    if (st.orbit && !reduced) orbitAngle += st.orbit * dt;
-    else { orbitAngle = Math.atan2(Math.sin(orbitAngle), Math.cos(orbitAngle)); orbitAngle += (0 - orbitAngle) * k; }
-    pointer.sx += (pointer.x - pointer.sx) * 0.05; pointer.sy += (pointer.y - pointer.sy) * 0.05;
-    const rel = cur.cam.clone().sub(cur.tgt).applyAxisAngle(up, orbitAngle + (reduced ? 0 : pointer.sx * -0.12));
-    camera.position.copy(cur.tgt).add(rel);
-    camera.position.y += reduced ? 0 : pointer.sy * 1.2;
-    camera.lookAt(cur.tgt);
-
-    // frame the model away from the text panel
-    const side = st.side || 'left';
-    const sxT = mobile ? 0 : (side === 'right' ? 0.17 : -0.17);
-    const syT = mobile ? 0.17 : 0;
-    cur.shiftX += (sxT - cur.shiftX) * k; cur.shiftY += (syT - cur.shiftY) * k;
-    camera.setViewOffset(W, H, cur.shiftX * W, cur.shiftY * H, W, H);
-
-    // light
-    cur.bg.lerp(tmpC.set(L.bg), k); scene.background.copy(cur.bg); scene.fog.color.copy(cur.bg);
-    cur.sunColor.lerp(tmpC.set(L.sunColor), k); sun.color.copy(cur.sunColor);
-    ['hemi', 'sun', 'glow', 'gold', 'lamps', 'exposure'].forEach((p) => { cur[p] += (L[p] - cur[p]) * k; });
-    hemi.intensity = cur.hemi; sun.intensity = cur.sun;
-    renderer.toneMappingExposure = cur.exposure;
-    M.glow.color.setRGB(1, 0.84, 0.52).multiplyScalar(0.35 + cur.glow * 0.9);
-    domeLight.intensity = cur.glow * 1.4;
-    lampLight.intensity = cur.lamps * 2.4;
-    goldMats.forEach((m) => { if (m.isSlab) m.m.emissiveIntensity = 0.15 + cur.gold * 0.3; else m.emissiveIntensity = cur.gold + cur.lamps * 0.12; });
-    fades.tymp.mats.forEach((m) => { if (m.emissiveIntensity !== undefined) m.emissiveIntensity = cur.glow * 0.8; });
-
-    // fades
-    Object.keys(fades).forEach((name) => {
-      const f = fades[name], target = show[name] || 0;
-      f.cur += (target - f.cur) * k;
-      const o = f.cur < 0.005 ? 0 : f.cur;
-      f.group.visible = o > 0;
-      f.mats.forEach((m) => { m.opacity = m.userData.baseOpacity * o; m.depthWrite = name === 'exterior' ? o > 0.6 : m.depthWrite; });
-    });
-
-    // structure explode
-    explode += ((st.explode || 0) - explode) * k;
-    parts.arches.position.y = explode * explodeOff.arches;
-    parts.pend.position.y = explode * explodeOff.pend;
-
-    // dome height and the 558 collapse
-    let domeY = DOME_BASE + explode * explodeOff.dome, domeRot = 0, domeVis = true, shellScale = 1;
-    if (domeAnim) {
-      const e = (now - domeAnim.t0) / 1000;
-      if (e < 1.2) { const q = e / 1.2; domeY -= 12 * q * q; domeRot = 0.5 * q * q; domeHCur = domeAnim.from; }
-      else if (e < 1.9) { domeVis = false; }
-      else if (e < 3.6) { const q = (e - 1.9) / 1.7; const ease = 1 - Math.pow(1 - q, 3); domeHCur = 0.72; shellScale = ease; }
-      else { domeAnim = null; domeH = 0.72; domeHCur = 0.72; }
-    } else { domeHCur += (domeH - domeHCur) * k; }
-    domeGroup.position.y = domeY; domeGroup.rotation.z = domeRot; domeGroup.visible = domeVis;
-    shell.scale.set(1, domeHCur * shellScale + 0.0001, 1);
-    ribGroup.scale.y = domeAnim && shellScale < 1 ? Math.max(0.0001, shellScale) : 1;
-
-    // words, embers, slabs
-    words.children.forEach((sp) => {
-      const i = sp.userData.i, a = t * 0.12 + i * Math.PI / 3;
-      sp.position.set(Math.cos(a) * 13, 9 + Math.sin(t * 0.5 + i) * 1.6, Math.sin(a) * 13);
-    });
-    if (fades.embers.cur > 0.01) {
-      for (let i = 0; i < EMBERS; i++) {
-        emberPos[i * 3 + 1] += emberVel[i] * dt * (reduced ? 0.2 : 1);
-        emberPos[i * 3] += Math.sin(t * 1.3 + i) * dt * 0.6;
-        if (emberPos[i * 3 + 1] > 26) emberPos[i * 3 + 1] = 0;
-      }
-      emberGeo.attributes.position.needsUpdate = true;
-    }
-    slabAnchors.forEach((s) => {
-      const b = s.mesh.userData.base;
-      s.mesh.position.y = b.y + (reduced ? 0 : Math.sin(t * 0.8 + s.mesh.userData.i) * 0.08);
-    });
-
-    renderer.render(scene, camera);
-
-    // tags
-    const tagKey = st.tags || '';
-    tags.forEach((tg) => {
-      const target = tg.group === tagKey ? 1 : 0;
-      tg.cur += (target - tg.cur) * Math.min(1, k * 1.6);
-      if (tg.cur < 0.02) { if (tg.el.style.opacity !== '0') tg.el.style.opacity = '0'; return; }
-      const p = tg.posFn().project(camera);
-      if (p.z > 1 || p.x < -1.1 || p.x > 1.1 || p.y < -1.1 || p.y > 1.1) { tg.el.style.opacity = '0'; return; }
-      const x = (p.x * 0.5 + 0.5) * W, y = (-p.y * 0.5 + 0.5) * H;
-      tg.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%, -130%)';
-      tg.el.style.opacity = tg.cur.toFixed(2);
-    });
-
-    requestAnimationFrame(frame);
-  }
   update();
-  requestAnimationFrame(frame);
 })();
 </script>
 </body>
